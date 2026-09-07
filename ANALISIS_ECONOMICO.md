@@ -25,31 +25,35 @@ la elección justificada con números, no solo con la regla general.
 
 ## 2. Costo por corrida
 
-### 2.1 Medición real (Iteración 8 y 9 de DECISIONES.md)
+### 2.1 Medición real (Iteraciones 8, 9 y 10 de DECISIONES.md)
 
 Una vez que el usuario consiguió una `ANTHROPIC_API_KEY` propia, se corrió
 `agente/correr_corridas_reales.py` contra la API real (no una estimación).
 El flujo hace **dos llamadas** por legajo: una con `tool_choice` forzado a
 `evaluar_legajo`, otra con `output_config.format` para el JSON final —
-`response.usage` de ambas llamadas, sumado:
+`response.usage` de ambas llamadas, sumado. Esta es la corrida final,
+después de agregar la verificación contra comprobantes reales y la
+detección de ingresos atípicos (Iteración 10), que hizo el `entrada.md` de
+cada legajo un poco más largo que en la primera medición:
 
 | Legajo | Input tokens (real) | Output tokens (real) | Costo real (Haiku 4.5) |
 |---|---|---|---|
-| Perez | 8 524 | 478 | USD 0,010914 |
-| Gonzalez | 8 759 | 497 | USD 0,011244 |
-| Lopez | 8 650 | 543 | USD 0,011365 |
-| **Total (3 corridas)** | **25 933** | **1 518** | **USD 0,033523** |
-| **Promedio por corrida** | 8 644 | 506 | **USD 0,011174** |
+| Perez | 10 307 | 471 | USD 0,012662 |
+| Gonzalez | 10 761 | 524 | USD 0,013381 |
+| Lopez | 11 971 | 619 | USD 0,015066 |
+| **Total (3 corridas)** | **33 039** | **1 614** | **USD 0,041109** |
+| **Promedio por corrida** | 11 013 | 538 | **USD 0,013703** |
 
-Esto es ≈2× la primera estimación por caracteres (§2.2, dejada abajo tal
+Esto es más que la primera estimación por caracteres (§2.2, dejada abajo tal
 cual se hizo, sin corregir después de tener el dato real — ver
 `DECISIONES.md` sobre por qué documentar el error de estimación es parte de
-la nota). La diferencia se explica por dos motivos concretos que solo se ven
-midiendo de verdad: el `input_schema` completo de la herramienta (que la API
-factura como parte del prompt) y el `system_prompt.md` completo se mandan en
-**las dos** llamadas, no en una sola; y las `observaciones` que redacta el
-modelo terminaron siendo más largas de lo estimado (explican volatilidad de
-ingresos, documentación faltante, etc.).
+la nota) y también más que la primera medición real (Iteración 8: USD
+0,011174 promedio). La diferencia entre las dos mediciones reales es
+enteramente atribuible al legajo Lopez, cuyo `entrada.md` creció al agregar
+la tabla de discrepancias y los 6 comprobantes reales de facturación
+(Iteración 10) — el costo de una corrida escala directo con cuánto contexto
+de verificación se le da al agente, un trade-off explícito entre "gastar más
+tokens" y "confiar menos en un resumen que puede estar mal cargado".
 
 ### 2.2 Estimación original (antes de tener API key — dejada como referencia)
 
@@ -69,11 +73,11 @@ frente a la medición real de §2.1.
 
 ### 2.3 Comparación de modelos (con el perfil de tokens real, §2.1)
 
-| Modelo | Precio in/out (por MTok) | Costo real por legajo (8 644 in / 506 out) |
+| Modelo | Precio in/out (por MTok) | Costo real por legajo (11 013 in / 538 out) |
 |---|---|---|
-| **Claude Haiku 4.5** (elegido) | $1.00 / $5.00 | **USD 0,0112** |
-| Claude Sonnet 5 | $2.00 / $10.00 | USD 0,0224 (2× más caro) |
-| Claude Opus 5 | $5.00 / $25.00 | USD 0,0559 (5× más caro) |
+| **Claude Haiku 4.5** (elegido) | $1.00 / $5.00 | **USD 0,0137** |
+| Claude Sonnet 5 | $2.00 / $10.00 | USD 0,0274 (2× más caro) |
+| Claude Opus 5 | $5.00 / $25.00 | USD 0,0685 (5× más caro) |
 
 Cálculo: `costo = (input_tokens/1e6)×precio_input + (output_tokens/1e6)×precio_output`.
 
@@ -85,13 +89,16 @@ un escenario base de **20 legajos por semana** (una hipotecaria chica/
 mediana), y un escenario alto de **200 legajos por semana** para mostrar que
 la conclusión no cambia con el volumen.
 
-Costo por legajo usado en la proyección: **USD 0,011174** (medición real,
-§2.1 — no la estimación de §2.2).
+Costo por legajo usado en la proyección: **USD 0,013703** (medición real
+final, §2.1 — no la estimación de §2.2). Este número ya incluye el costo
+extra de la verificación contra comprobantes reales (Iteración 10) — es el
+costo de la versión del sistema que efectivamente se entrega, no la versión
+más barata y menos verificada de la primera corrida.
 
 | Escenario | Legajos/semana | Costo semanal (Haiku) | Costo anual (52 sem.) |
 |---|---|---|---|
-| Base | 20 | ≈ USD 0,22 | **≈ USD 11,62** |
-| Alto | 200 | ≈ USD 2,23 | ≈ USD 116,21 |
+| Base | 20 | ≈ USD 0,27 | **≈ USD 14,25** |
+| Alto | 200 | ≈ USD 2,74 | ≈ USD 142,51 |
 
 **Conclusión**: el costo de inferencia es irrelevante frente al problema de
 negocio que se está resolviendo (horas de analista revisando carpetas a

@@ -16,5 +16,5 @@
   "resultado_control_2": "ok credito",
   "resultado_final": "ok credito aprobado",
   "motivo": null,
-  "observaciones": "Cliente monotributista categoría C con antigüedad de 9 años. Ingresos mensuales facturados oscilan entre ARS 2,150,300 y ARS 3,029,535 (variación del 40.9%), sin alcanzar volatilidad alta según criterio técnico (>100%). Ambos controles cumplen: cuota/ingreso en 39.4% (límite 40%) y LTV en 27.5% (límite 35%). Se requiere verificar documentación de acreditación de ingresos: declaración jurada de facturación de últimos 6 meses ante ARCA según condición de monotributista."
+  "observaciones": "Legajo verificado contra comprobantes reales de facturación (carpeta Ingresos): los 6 meses (marzo a agosto) coinciden exactamente con el Resumen Carpeta. Cliente es monotributista categoría C, profesor de inglés con 9 años de antigüedad. Ingreso neto promedio ARS 2.709.944. Variación de ingresos: 40,9% (rango ARS 2.150.300 a ARS 3.029.535). No se detectaron meses atípicos ni alta volatilidad. Ambos controles aprobados: cuota/ingreso 39,4% (límite 40%), LTV 27,5% (límite 35%). Documentación de ingresos completa y verificada."
 }

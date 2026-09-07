@@ -36,3 +36,20 @@ Resumen Carpeta ,Préstamo:,#1,,,,,,,,
 
 (Se omite el cuadro de amortización mes a mes de las 60 cuotas — no es
 insumo de los dos controles financieros y no cambia el resultado.)
+
+## Verificación contra comprobantes reales (carpeta "Ingresos")
+
+A raíz de la Iteración 10 (ver DECISIONES.md), se cruzaron también los 3
+recibos de sueldo reales de la carpeta "Ingresos" de este legajo contra el
+Resumen Carpeta:
+
+| Mes | Resumen Carpeta | Recibo de sueldo real (Neto a cobrar) | Diferencia |
+|---|---|---|---|
+| Junio | ARS 2.587.123 | ARS 2.580.000 | 0,3% |
+| Julio | ARS 2.809.243 | ARS 2.823.000 | 0,5% |
+| Agosto | ARS 2.726.198 | ARS 2.763.000 | 1,3% |
+
+Diferencias menores (<1,5%), consistentes con redondeo entre el resumen y
+el recibo formal — no cambian el resultado de ningún control. A diferencia
+del legajo Lopez, este legajo **no** presenta discrepancias significativas
+ni meses atípicos.

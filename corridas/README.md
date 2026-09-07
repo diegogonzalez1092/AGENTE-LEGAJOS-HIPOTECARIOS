@@ -35,9 +35,17 @@ contra la API de Anthropic para los 3 legajos, usando exactamente el texto
 de `entrada.md` ya capturado en la Etapa 1 (sin volver a tocar Drive). La
 primera corrida de esta etapa encontró un bug real (el modelo promediaba mal
 los ingresos mensuales — ver Iteración 9), que se corrigió en
-`agente/tools.py`, y se volvió a correr. **`salida.json` y `metadata.json`
-de cada carpeta son el resultado de esta segunda corrida, ya con el fix
-aplicado**, con `usage` y costo reales de `response.usage` (no estimados).
+`agente/tools.py`, y se volvió a correr.
+
+**Etapa 3 (Iteración 10)** — el usuario, mirando el Excel entregado, notó
+que el ingreso de agosto de Lopez no coincidía con los comprobantes reales.
+Se verificó contra la carpeta "Ingresos" de los 3 legajos en Drive (solo
+Lopez tenía discrepancia), se agregó a `agente/tools.py` la detección de
+meses de ingreso atípicos, se actualizó `entrada.md` de los 3 legajos con la
+verificación cruzada, y se volvió a correr contra la API. **`salida.json`,
+`fecha.txt` y `metadata.json` de cada carpeta son el resultado de esta
+tercera corrida**, con `usage` y costo reales de `response.usage` (no
+estimados) y ya con la corrección de datos de Lopez incorporada.
 
 ### Cómo reproducir estas 3 corridas
 
@@ -59,26 +67,27 @@ segundos):
 python agente/tools.py
 ```
 
-## Resultado (verificado dos veces: por el LLM contra la API real, y por el cálculo determinista standalone)
+## Resultado final (verificado tres veces: comprobantes reales, cálculo determinista standalone, y el LLM contra la API real)
 
-| Legajo | Control 1 (cuota/ingreso) | Control 2 (LTV) | Resultado |
-|---|---|---|---|
-| Perez | 27,3% — OK | 20,4% — OK | ok crédito aprobado |
-| Gonzalez | 39,4% — OK (margen ajustado) | 27,5% — OK | ok crédito aprobado |
-| Lopez | 43,2% — NO CUMPLE | 40,5% — NO CUMPLE | crédito no aprobado |
+| Legajo | Ingreso mensual usado | Control 1 (cuota/ingreso) | Control 2 (LTV) | Resultado |
+|---|---|---|---|---|
+| Perez | Comprobantes reales (recibo de sueldo) | 27,2–27,3% — OK | 20,4% — OK | ok crédito aprobado |
+| Gonzalez | Comprobantes reales (facturación), coinciden exacto con el resumen | 39,4% — OK (margen ajustado) | 27,5% — OK | ok crédito aprobado |
+| Lopez | Comprobantes reales (facturación) — **no** el Resumen Carpeta, que tenía 2 meses mal cargados | 41,5% — NO CUMPLE | 40,5% — NO CUMPLE | crédito no aprobado, **+ advertencia de ingreso atípico en agosto** (6,4x la mediana) |
 
-## Costo real medido (`response.usage`, modelo `claude-haiku-4-5`)
+## Costo real medido (`response.usage`, modelo `claude-haiku-4-5`, corrida final con verificación de comprobantes)
 
 | Legajo | Input tokens | Output tokens | Costo |
 |---|---|---|---|
-| Perez | 8 524 | 478 | USD 0,010914 |
-| Gonzalez | 8 759 | 497 | USD 0,011244 |
-| Lopez | 8 650 | 543 | USD 0,011365 |
-| **Total** | **25 933** | **1 518** | **USD 0,033523** |
+| Perez | 10 307 | 471 | USD 0,012662 |
+| Gonzalez | 10 761 | 524 | USD 0,013381 |
+| Lopez | 11 971 | 619 | USD 0,015066 |
+| **Total** | **33 039** | **1 614** | **USD 0,041109** |
 
 Ver `ANALISIS_ECONOMICO.md` para la proyección semanal/anual con este dato.
 
 ## Fecha
 
-Etapa 1: 2026-09-07 (lectura de Drive). Etapa 2 (corridas reales contra la
-API, con el fix aplicado): 2026-09-07, mismo día.
+Etapa 1: 2026-09-07 (lectura de Drive). Etapa 2 (fix del promedio, Iteración
+9): 2026-09-07. Etapa 3 (verificación de comprobantes y detección de
+atípicos, Iteración 10): 2026-09-07 — mismo día las tres.

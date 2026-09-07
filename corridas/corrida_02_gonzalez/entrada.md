@@ -38,3 +38,21 @@ Resumen Carpeta ,Préstamo:,#2,,,,,,,,,,,,
 
 (Se omite el cuadro de amortización mes a mes de las 60 cuotas — no es
 insumo de los dos controles financieros y no cambia el resultado.)
+
+## Verificación contra comprobantes reales (carpeta "Ingresos")
+
+A raíz de la Iteración 10 (ver DECISIONES.md), se sumaron las facturas reales
+de la carpeta "Ingresos" de este legajo (varias por mes, a distintos
+clientes) y se comparó contra el Resumen Carpeta:
+
+| Mes | Resumen Carpeta | Suma de comprobantes reales | ¿Coincide? |
+|---|---|---|---|
+| Marzo | ARS 2.758.900 | ARS 2.758.900 (4 facturas) | Sí, exacto |
+| Abril | ARS 2.150.300 | ARS 2.150.300 (1 factura) | Sí, exacto |
+| Mayo | ARS 2.945.600 | ARS 2.945.600 (1 factura) | Sí, exacto |
+| Junio | ARS 3.029.535 | ARS 3.029.535 (2 facturas) | Sí, exacto |
+| Julio | ARS 2.635.650 | ARS 2.635.650 (2 facturas) | Sí, exacto |
+| Agosto | ARS 2.739.680 | ARS 2.739.680 (2 facturas) | Sí, exacto |
+
+Los 6 meses coinciden exactamente. A diferencia del legajo Lopez, este
+legajo **no** presenta discrepancias ni meses atípicos.

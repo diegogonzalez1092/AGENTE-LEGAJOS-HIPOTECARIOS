@@ -1,12 +1,12 @@
 {
-  "fecha_hora_utc": "2026-09-07T03:07:48.181715+00:00",
+  "fecha_hora_utc": "2026-09-07T04:18:18.226899+00:00",
   "legajo": "Legajo Gonzalez (Crédito #2)",
   "canal_de_ejecucion": "API real de Anthropic (claude-haiku-4-5) vía agente/legajo_agent.py::correr_agente",
   "modelo": "claude-haiku-4-5",
   "uso_tokens": {
-    "input_tokens": 8759,
-    "output_tokens": 497
+    "input_tokens": 10761,
+    "output_tokens": 524
   },
-  "costo_usd": 0.011244,
-  "nota": "Corrida ejecutada contra la API real una vez que el usuario consiguio una ANTHROPIC_API_KEY propia (ver DECISIONES.md, Iteracion 8). Esta es la SEGUNDA corrida real: la primera (con el mismo canal) uso una version de evaluar_legajo que dejaba que el modelo promediara los ingresos mensuales el mismo, y ese promedio vino mal para el legajo Lopez -- ver DECISIONES.md, Iteracion 9. Se corrigio agente/tools.py para que el promedio tambien sea determinista y se volvio a correr; estos son los valores ya corregidos."
+  "costo_usd": 0.013381,
+  "nota": "Corrida ejecutada contra la API real de Anthropic (ver DECISIONES.md, Iteración 8). agente/tools.py::evaluar_legajo recibe la lista cruda de ingresos mensuales y promedia internamente — el LLM nunca hace ese cálculo (ver DECISIONES.md, Iteración 9, sobre el bug que motivó este diseño)."
 }

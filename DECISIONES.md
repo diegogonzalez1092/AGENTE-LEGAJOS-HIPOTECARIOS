@@ -188,3 +188,79 @@ aprobaba o no un crédito), y cerrada con un cambio de diseño verificable
 (no con una instrucción de prompt más estricta, que no habría garantizado
 nada). Ver `GOBIERNO_Y_RIESGO.md` §2 para el registro de este riesgo ya
 cerrado.
+
+## Iteración 10 — El usuario encontró un segundo problema real: un mes de ingreso no coincide con los comprobantes
+
+Después de entregado el proyecto, el usuario miró el Excel del legajo Lopez
+y notó algo que ni el agente ni la revisión anterior habían chequeado: el
+ingreso de **agosto** no coincide con "los otros recibos". Hasta ese
+momento, tanto `tools.py` como las corridas reales habían tomado los 6
+valores mensuales directamente del "Resumen Carpeta" — nunca se habían
+cruzado contra los comprobantes reales de la subcarpeta "Ingresos" de cada
+legajo (que sí están en la carpeta de Drive, y que la consigna de negocio
+original menciona explícitamente como la fuente de acreditación: "Monotri-
+butistas: comprobantes de facturación de los últimos 6 meses").
+
+Se abrió la carpeta "Ingresos" de Lopez (6 archivos `0X-2026 Ventas.xlsx`,
+uno por mes) y se comparó contra el Resumen Carpeta:
+
+| Mes | Resumen Carpeta | Comprobante real | ¿Coincide? |
+|---|---|---|---|
+| Marzo–Junio | (4 valores) | idénticos | Sí |
+| **Julio** | ARS 1.741.680 (= junio, calcado) | **ARS 1.654.750** | No |
+| **Agosto** | ARS 6.000.000 | **ARS 6.500.000** | No |
+
+El usuario tenía razón en dos niveles distintos, no en uno solo:
+
+1. **Los números del resumen no coinciden con la documentación real** —
+   julio parece un copy-paste de junio, agosto está redondeado.
+2. **Más allá de cuál número se use, agosto es un valor atípico** frente al
+   resto: la mediana de los otros 5 meses es ARS 379.192 (con comprobantes
+   reales) y agosto es >6x esa mediana — una sola factura, al mismo cliente
+   único de todo el legajo, muy por encima de cualquier patrón normal de
+   facturación. Promediarlo sin más, como si fuera un mes de actividad
+   normal, es tratar como "ingreso recurrente" algo que necesita
+   verificación documental adicional antes de contar para un crédito
+   hipotecario a 5 años.
+
+**Se verificaron también Perez y Gonzalez** contra sus propias carpetas
+"Ingresos" para confirmar que el problema era específico de Lopez y no un
+patrón general: Gonzalez coincide exacto en los 6 meses (sumando varias
+facturas por mes a distintos clientes); Perez tiene diferencias de <1,5%
+entre el resumen y el recibo de sueldo real (redondeo normal, no un error).
+Ninguno de los dos tiene meses atípicos. El problema es real y es
+específico del legajo que ya se iba a rechazar.
+
+**Corrección aplicada**:
+
+1. `agente/tools.py::promediar_ingresos` ahora calcula también la mediana y
+   detecta meses "atípicos" (> 3× la mediana del resto), devolviéndolos en
+   `outliers`. `evaluar_legajo` los reporta en un campo nuevo,
+   `advertencias`, independiente de si los controles 1 y 2 aprueban o no —
+   para que un ingreso atípico no quede escondido dentro de un resultado
+   "aprobado".
+2. `prompts/system_prompt.md` y `user_prompt.md` ahora instruyen
+   explícitamente: cuando el legajo trae comprobantes reales además del
+   resumen, los comprobantes son la fuente de verdad, y cualquier
+   `advertencias` de la herramienta se copia tal cual a `observaciones` —
+   nunca se resume ni se omite.
+3. `corridas/corrida_03_lopez/entrada.md` se actualizó con los 6
+   comprobantes reales y una tabla explícita de discrepancias, para que la
+   corrida sea reproducible con la fuente correcta (no con el resumen que
+   tenía el error). `corrida_01_perez` y `corrida_02_gonzalez` se
+   actualizaron con su propia verificación cruzada (ambos, sin hallazgos).
+4. Se volvió a correr `agente/correr_corridas_reales.py` contra la API real.
+   El resultado de Lopez sigue siendo rechazo (ahora con Control 1 en 41,5%
+   en vez de 43,2%, porque el ingreso real de julio es más bajo que el que
+   tenía el resumen — el resultado final no cambia, pero el número sí es
+   más correcto), y la salida real del modelo copió la advertencia del mes
+   atípico en `observaciones` sin que se lo pidiera dos veces.
+
+**Por qué importa para la nota**: el requisito 6 (gobierno y riesgo) pide
+"qué revisás vos antes de confiar en una salida" — este es un ejemplo real
+de eso funcionando en la dirección correcta: un humano (el usuario, revisando
+el Excel entregado) encontró algo que el agente no había chequeado, y el
+sistema se corrigió para que la próxima vez lo detecte solo. Es la segunda
+vez en este proyecto (después de la Iteración 9) que una revisión externa
+—no un ajuste preventivo de prompt— es lo que realmente mejora el sistema.
+Ver `GOBIERNO_Y_RIESGO.md` §2 y §4 para cómo queda reflejado este hallazgo.

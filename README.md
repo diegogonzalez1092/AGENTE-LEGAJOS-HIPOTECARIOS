@@ -50,17 +50,28 @@ Carpeta" real.
 
 | Legajo | Jurisdicción | Control 1 (cuota/ingreso) | Control 2 (LTV) | Resultado final |
 |---|---|---|---|---|
-| Perez (#1) | Mar del Plata | 27,3% — OK | 20,4% — OK | **ok crédito aprobado** |
+| Perez (#1) | Mar del Plata | 27,2% — OK | 20,4% — OK | **ok crédito aprobado** |
 | Gonzalez (#2) | Mar del Plata | 39,4% — OK (margen ajustado) | 27,5% — OK | **ok crédito aprobado** |
-| Lopez (364313) | Córdoba | 43,2% — NO CUMPLE | 40,5% — NO CUMPLE | **crédito no aprobado** |
+| Lopez (364313) | Córdoba | 41,5% — NO CUMPLE | 40,5% — NO CUMPLE | **crédito no aprobado** + advertencia de ingreso atípico |
 
-Costo real medido (`response.usage`, `claude-haiku-4-5`): **USD 0,0335** las
-3 corridas juntas (≈USD 0,0112 por legajo) — ver `ANALISIS_ECONOMICO.md`.
+Costo real medido (`response.usage`, `claude-haiku-4-5`): **USD 0,0411** las
+3 corridas juntas (≈USD 0,0137 por legajo) — ver `ANALISIS_ECONOMICO.md`.
 
-La primera vez que se corrió esto contra la API real, el resultado de Lopez
-vino mal (un bug real de promedio de ingresos calculado por el modelo) — se
-encontró, se corrigió y se volvió a correr. Ver `DECISIONES.md`, Iteración 9,
-para la historia completa; es la evidencia más importante del proyecto.
+Esto pasó por dos rondas de corrección real, no una sola:
+
+1. La primera vez que se corrió contra la API real, el resultado de Lopez
+   vino mal por un bug de promedio de ingresos calculado por el modelo
+   (Iteración 9).
+2. Después de entregado, el usuario notó — mirando el Excel — que el ingreso
+   de agosto de Lopez no coincidía con los comprobantes reales de la
+   carpeta "Ingresos" de Drive. Se verificó, se confirmó (y se vio que ese
+   mismo mes es además un valor atípico, 6,4x la mediana del resto), y se
+   agregó detección determinista de ingresos atípicos al agente
+   (Iteración 10).
+
+Ver `DECISIONES.md` para la historia completa de ambas — es la evidencia
+más importante del proyecto: no una falla mencionada por cumplir, sino dos
+fallas reales encontradas corriendo y revisando el sistema de verdad.
 
 Detalle completo, entrada real y JSON de salida de cada corrida:
 [`corridas/`](corridas/). Excel maestro con las 3 filas ya cargadas:

@@ -82,15 +82,29 @@ Reglas de negocio fijas que debés conocer (estas NO cambian entre legajos):
 - Si los ingresos mensuales son muy volátiles (variación mayor al 100% entre
   el mes más bajo y el más alto), decílo explícitamente en `observaciones`:
   es una señal de riesgo aunque el promedio pase los controles.
+- Si el legajo trae, además del "Resumen Carpeta", comprobantes reales de
+  ingresos (facturación mensual, recibos de sueldo — carpeta "Ingresos" del
+  legajo), esos comprobantes son la fuente de verdad. El resumen es una
+  referencia rápida que puede tener errores de carga: en el legajo Lopez, el
+  resumen decía un ingreso de agosto distinto al que muestra el comprobante
+  real de ese mes (ver DECISIONES.md, Iteración 10). Si hay diferencia,
+  usá el comprobante y decilo en `observaciones`.
+- La herramienta `evaluar_legajo` devuelve `advertencias` cuando un mes de
+  ingreso es un valor atípico (mucho más alto que el resto). Copiá esas
+  advertencias tal cual a `observaciones` — no las resumas ni las omitas,
+  incluso si los controles ya aprueban. Un ingreso que no se parece a los
+  demás meses del mismo cliente (una sola factura mucho más grande que las
+  otras) es una señal para verificar antes de aprobar, no un dato más para
+  promediar sin más.
 
 ## 5. HERRAMIENTAS DISPONIBLES
 
 - `evaluar_legajo(cuota_mensual_ars, ingresos_mensuales_ars, valor_credito_usd,
   valor_propiedad_usd)` → aplica los dos controles duros de forma
   determinista (código Python, no LLM), incluido el promedio de
-  `ingresos_mensuales_ars` (una lista, no un número ya promediado), y
-  devuelve el resultado de cada control más la decisión final. Ver
-  `agente/tools.py`.
+  `ingresos_mensuales_ars` (una lista, no un número ya promediado) y la
+  detección de meses de ingreso atípicos (`advertencias`), y devuelve el
+  resultado de cada control más la decisión final. Ver `agente/tools.py`.
 - Conector de archivos (Google Drive / Excel): en producción, el agente lee
   el "Resumen Carpeta" de cada legajo directamente desde la carpeta de Drive
   de la empresa, y escribe el resultado en el Excel maestro compartido. Ver

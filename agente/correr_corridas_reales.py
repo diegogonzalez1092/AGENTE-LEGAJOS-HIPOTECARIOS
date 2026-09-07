@@ -37,20 +37,29 @@ PRECIO_OUTPUT_MTOK = 5.00
 
 
 def parsear_entrada(path_entrada_md: str) -> tuple[str, str, str]:
-    """Extrae (nombre_carpeta, fuente, resumen_texto) de un entrada.md."""
+    """Extrae (nombre_carpeta, fuente, resumen_texto) de un entrada.md.
+
+    `resumen_texto` es TODO lo que hay desde el primer encabezado `## ` hasta
+    el final del archivo — no solo el primer bloque de código. Esto importa
+    para legajos como Lopez, donde entrada.md trae, además del "Resumen
+    Carpeta", una sección de hallazgo (la discrepancia contra los
+    comprobantes reales) y una sección de comprobantes reales: el agente
+    necesita ver las tres para poder priorizar el comprobante sobre el
+    resumen (ver DECISIONES.md, Iteración 10).
+    """
     with open(path_entrada_md, encoding="utf-8") as f:
         texto = f.read()
 
     nombre_match = re.search(r"^# Corrida \d+ — (.+)$", texto, re.MULTILINE)
     nombre_carpeta = nombre_match.group(1).strip() if nombre_match else "Legajo"
 
-    fuente_match = re.search(r"\*\*Archivo fuente\*\*: (.+)$", texto, re.MULTILINE)
+    fuente_match = re.search(r"\*\*Archivo fuente[^*]*\*\*: (.+)$", texto, re.MULTILINE)
     fuente = fuente_match.group(1).strip() if fuente_match else path_entrada_md
 
-    bloques = re.findall(r"```\n(.*?)\n```", texto, re.DOTALL)
-    if not bloques:
-        raise ValueError(f"No se encontró el bloque de Resumen Carpeta en {path_entrada_md}")
-    resumen_texto = bloques[0]
+    cuerpo_match = re.search(r"^## .*$", texto, re.MULTILINE)
+    if not cuerpo_match:
+        raise ValueError(f"No se encontró ningún encabezado '## ' en {path_entrada_md}")
+    resumen_texto = texto[cuerpo_match.start():].strip()
 
     return nombre_carpeta, fuente, resumen_texto
 
