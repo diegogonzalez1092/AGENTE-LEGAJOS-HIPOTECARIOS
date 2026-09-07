@@ -80,8 +80,8 @@ agente/
   generar_excel_maestro.py       — reconstruye output/legajos_maestro.xlsx desde corridas/*/salida.json
   requirements.txt
 corridas/
-  README.md                    — cómo se ejecutaron las 3 corridas reales (sin API key propia)
-  corrida_01_perez/            — entrada.md, salida.json, metadata.json
+  README.md                    — cómo se ejecutaron las 3 corridas reales
+  corrida_01_perez/            — entrada.md, salida.json, fecha.txt, metadata.json
   corrida_02_gonzalez/
   corrida_03_lopez/
 output/

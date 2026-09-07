@@ -8,8 +8,18 @@ Creación agentes de IA"** (compartida por el usuario), subcarpetas:
 - `Crédito 3 - Lopez` → `03 - #3 Lopez.xlsx`
 
 Cada uno de esos Excel tiene una hoja "Resumen Carpeta" con los datos del
-cliente y del crédito. Ese es el dato de entrada real de cada corrida
-(`entrada.md` en cada carpeta).
+cliente y del crédito. Ese es el dato de entrada real de cada corrida.
+
+Cada carpeta de corrida trae los tres artefactos que pide la consigna, cada
+uno en su propio archivo:
+
+- `entrada.md` — el dato de entrada real (texto crudo del legajo + qué
+  herramienta lo trajo).
+- `salida.json` — el resultado estructurado real del agente.
+- `fecha.txt` — fecha/hora UTC exacta de la corrida (también repetida
+  dentro de `metadata.json` y en el encabezado de `entrada.md`, para que no
+  dependa de un solo archivo).
+- `metadata.json` — extra: canal de ejecución, modelo, tokens y costo real.
 
 ## Cómo se generó esta evidencia (dos etapas, documentadas en DECISIONES.md)
 

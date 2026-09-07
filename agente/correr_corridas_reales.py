@@ -106,6 +106,13 @@ if __name__ == "__main__":
             json.dump(metadata, f, indent=2, ensure_ascii=False)
             f.write("\n")
 
+        # Requisito de formato de la consigna: corridas/ debe traer entrada,
+        # salida Y fecha como cosas identificables por separado — fecha.txt
+        # es la versión mínima de eso (además de repetirse en metadata.json
+        # y en el encabezado de entrada.md).
+        with open(os.path.join(carpeta, "fecha.txt"), "w", encoding="utf-8") as f:
+            f.write(metadata["fecha_hora_utc"] + "\n")
+
         agregar_legajo(EXCEL_OUT, fila_excel(salida))
         print(
             f"    -> {salida['cliente']}: {salida['resultado_final']} "
