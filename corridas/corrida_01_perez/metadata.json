@@ -1,0 +1,6 @@
+{
+  "fecha_hora_utc": "2026-09-07",
+  "legajo": "Crédito 1 - Perez",
+  "canal_de_ejecucion": "Claude (Sonnet 5) dentro de la sesión de Claude Code que construyó este repo, usando el conector MCP de Google Drive para leer el archivo real y agente/tools.py (ejecutado como script Python real) para los dos controles.",
+  "nota": "No se contó con ANTHROPIC_API_KEY propia para correr agente/legajo_agent.py contra la API — ver DECISIONES.md, Iteración 3. Por eso no hay conteo exacto de tokens de esta corrida puntual; la proyección de costos en ANALISIS_ECONOMICO.md está estimada a partir del tamaño real de prompts/system_prompt.md + prompts/user_prompt.md + este legajo."
+}

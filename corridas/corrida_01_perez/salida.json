@@ -1,0 +1,20 @@
+{
+  "nro_credito": "#1",
+  "jurisdiccion": "Mar del Plata",
+  "cliente": "Juan Perez",
+  "ingresos_propios_ars": 2707521.33,
+  "otros_ingresos_ars": 0,
+  "total_ingresos_ars": 2707521.33,
+  "cuota_usd": 488.04,
+  "tipo_cambio": 1515,
+  "cuota_ars": 739378.83,
+  "control_1_pct": 27.3,
+  "resultado_control_1": "ok credito",
+  "valor_propiedad_usd": 98000,
+  "valor_credito_usd": 20000,
+  "control_2_pct": 20.4,
+  "resultado_control_2": "ok credito",
+  "resultado_final": "ok credito aprobado",
+  "motivo": null,
+  "observaciones": "Ingresos mensuales estables (jun-ago 2026, entre ARS 2.587.123 y ARS 2.809.243). Primera propiedad, uso familiar. Veraz 758. Ambos controles aprueban con margen amplio."
+}

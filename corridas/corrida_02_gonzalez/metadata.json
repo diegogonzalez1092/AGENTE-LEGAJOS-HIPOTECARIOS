@@ -1,0 +1,6 @@
+{
+  "fecha_hora_utc": "2026-09-07",
+  "legajo": "Crédito 2 - Gonzalez",
+  "canal_de_ejecucion": "Claude (Sonnet 5) dentro de la sesión de Claude Code que construyó este repo, usando el conector MCP de Google Drive para leer el archivo real y agente/tools.py (ejecutado como script Python real) para los dos controles.",
+  "nota": "Ver metadata.json de corrida_01_perez para el detalle sobre por qué no se corrió agente/legajo_agent.py contra la API real."
+}

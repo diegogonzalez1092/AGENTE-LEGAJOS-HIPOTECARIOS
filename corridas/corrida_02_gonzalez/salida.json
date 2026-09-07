@@ -1,0 +1,20 @@
+{
+  "nro_credito": "#2",
+  "jurisdiccion": "Mar del Plata",
+  "cliente": "Pablo Gonzalez",
+  "ingresos_propios_ars": 2709944.17,
+  "otros_ingresos_ars": 0,
+  "total_ingresos_ars": 2709944.17,
+  "cuota_usd": 805.26,
+  "tipo_cambio": 1325,
+  "cuota_ars": 1066974.90,
+  "control_1_pct": 39.4,
+  "resultado_control_1": "ok credito",
+  "valor_propiedad_usd": 120000,
+  "valor_credito_usd": 33000,
+  "control_2_pct": 27.5,
+  "resultado_control_2": "ok credito",
+  "resultado_final": "ok credito aprobado",
+  "motivo": null,
+  "observaciones": "Monotributista categoría C con facturación mensual variable (ARS 2.150.300 a ARS 3.029.535). Control 1 aprueba con margen muy ajustado (39.4% vs. límite 40%) — se recomienda revisión manual adicional del comité de crédito antes de firmar, dado lo estrecho del margen. Veraz 934."
+}
