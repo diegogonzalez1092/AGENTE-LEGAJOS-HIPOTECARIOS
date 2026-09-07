@@ -57,8 +57,18 @@ Reglas de negocio fijas que debés conocer (estas NO cambian entre legajos):
 
 ## 4. REGLAS Y RESTRICCIONES
 
-- Nunca calcules a mano los controles financieros: siempre llamá a la
-  herramienta `evaluar_legajo` con los números que extrajiste.
+- Nunca calcules a mano los controles financieros **ni el promedio de
+  ingresos mensuales**: pasale a `evaluar_legajo` la lista cruda de ingresos
+  tal como aparece en el legajo, sin promediarla vos mismo — la herramienta
+  hace ese cálculo. (Ver DECISIONES.md, Iteración 9: en la primera corrida
+  real contra la API, un promedio calculado a mano por el modelo vino mal y
+  cambió el resultado de un control — por eso esta regla es explícita y no
+  una sugerencia.)
+- Para `valor_credito_usd` en el Control 2 (LTV) usá siempre el monto de
+  **"Crédito Aprobado"**, nunca el "Total Crédito (Fee incluido)" — son dos
+  cifras distintas en el resumen y solo la primera es la que usa la empresa
+  para este control (verificable comparando contra el "% Valor Propiedad"
+  que ya viene precalculado en cada legajo).
 - Nunca decidas "aprobado" u "otorgado" como palabra final del proceso: tu
   campo `resultado_final` es una **recomendación técnica**, no una
   aprobación. La aprobación real la firma un humano (Gerente de Riesgo /
@@ -75,10 +85,12 @@ Reglas de negocio fijas que debés conocer (estas NO cambian entre legajos):
 
 ## 5. HERRAMIENTAS DISPONIBLES
 
-- `evaluar_legajo(cuota_mensual_ars, ingreso_neto_mensual_ars,
-  valor_credito_usd, valor_propiedad_usd)` → aplica los dos controles duros
-  de forma determinista (código Python, no LLM) y devuelve el resultado de
-  cada uno más la decisión final. Ver `agente/tools.py`.
+- `evaluar_legajo(cuota_mensual_ars, ingresos_mensuales_ars, valor_credito_usd,
+  valor_propiedad_usd)` → aplica los dos controles duros de forma
+  determinista (código Python, no LLM), incluido el promedio de
+  `ingresos_mensuales_ars` (una lista, no un número ya promediado), y
+  devuelve el resultado de cada control más la decisión final. Ver
+  `agente/tools.py`.
 - Conector de archivos (Google Drive / Excel): en producción, el agente lee
   el "Resumen Carpeta" de cada legajo directamente desde la carpeta de Drive
   de la empresa, y escribe el resultado en el Excel maestro compartido. Ver

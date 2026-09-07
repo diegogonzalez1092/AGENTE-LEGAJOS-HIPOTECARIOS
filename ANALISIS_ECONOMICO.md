@@ -25,16 +25,38 @@ la elección justificada con números, no solo con la regla general.
 
 ## 2. Costo por corrida
 
-Método de estimación (no tuvimos `ANTHROPIC_API_KEY` propia para medir con
-`client.messages.count_tokens` — ver `DECISIONES.md`, Iteración 3): se midió
-el tamaño real en caracteres de `prompts/system_prompt.md` +
-`corridas/*/entrada.md` + el esquema de la herramienta `evaluar_legajo`, y se
-convirtió a tokens con la aproximación estándar de ~4 caracteres por token.
-El flujo real de producción (`agente/legajo_agent.py`) hace **dos llamadas**
-a la API por legajo: una donde el modelo llama a la herramienta
-`evaluar_legajo`, y otra donde devuelve el JSON final ya con el resultado de
-la herramienta adentro del historial — por eso el input efectivo es mayor
-que un solo prompt.
+### 2.1 Medición real (Iteración 8 y 9 de DECISIONES.md)
+
+Una vez que el usuario consiguió una `ANTHROPIC_API_KEY` propia, se corrió
+`agente/correr_corridas_reales.py` contra la API real (no una estimación).
+El flujo hace **dos llamadas** por legajo: una con `tool_choice` forzado a
+`evaluar_legajo`, otra con `output_config.format` para el JSON final —
+`response.usage` de ambas llamadas, sumado:
+
+| Legajo | Input tokens (real) | Output tokens (real) | Costo real (Haiku 4.5) |
+|---|---|---|---|
+| Perez | 8 524 | 478 | USD 0,010914 |
+| Gonzalez | 8 759 | 497 | USD 0,011244 |
+| Lopez | 8 650 | 543 | USD 0,011365 |
+| **Total (3 corridas)** | **25 933** | **1 518** | **USD 0,033523** |
+| **Promedio por corrida** | 8 644 | 506 | **USD 0,011174** |
+
+Esto es ≈2× la primera estimación por caracteres (§2.2, dejada abajo tal
+cual se hizo, sin corregir después de tener el dato real — ver
+`DECISIONES.md` sobre por qué documentar el error de estimación es parte de
+la nota). La diferencia se explica por dos motivos concretos que solo se ven
+midiendo de verdad: el `input_schema` completo de la herramienta (que la API
+factura como parte del prompt) y el `system_prompt.md` completo se mandan en
+**las dos** llamadas, no en una sola; y las `observaciones` que redacta el
+modelo terminaron siendo más largas de lo estimado (explican volatilidad de
+ingresos, documentación faltante, etc.).
+
+### 2.2 Estimación original (antes de tener API key — dejada como referencia)
+
+Método: se midió el tamaño en caracteres de `prompts/system_prompt.md` +
+`corridas/*/entrada.md` + el esquema de la herramienta, y se convirtió a
+tokens con la aproximación de ~4 caracteres por token (sin poder validarla
+con `client.messages.count_tokens` en ese momento).
 
 | Legajo | Caracteres de entrada (system+legajo) | Input tokens (≈, 2 llamadas) | Output tokens (≈) |
 |---|---|---|---|
@@ -42,14 +64,16 @@ que un solo prompt.
 | Gonzalez | 7 557 | ≈ 4 100 | ≈ 210 |
 | Lopez | 7 571 | ≈ 4 100 | ≈ 300 |
 
-Tomamos **4 000 tokens de entrada y 300 de salida** como estimación
-conservadora por legajo (redondeando hacia arriba).
+Estimación resultante: ≈USD 0,0055 por legajo — **subestimada por ~2×**
+frente a la medición real de §2.1.
 
-| Modelo | Precio in/out (por MTok) | Costo estimado por legajo |
+### 2.3 Comparación de modelos (con el perfil de tokens real, §2.1)
+
+| Modelo | Precio in/out (por MTok) | Costo real por legajo (8 644 in / 506 out) |
 |---|---|---|
-| **Claude Haiku 4.5** (elegido) | $1.00 / $5.00 | **≈ USD 0,0055** |
-| Claude Sonnet 5 | $2.00 / $10.00 | ≈ USD 0,011 (2× más caro) |
-| Claude Opus 5 | $5.00 / $25.00 | ≈ USD 0,0275 (5× más caro) |
+| **Claude Haiku 4.5** (elegido) | $1.00 / $5.00 | **USD 0,0112** |
+| Claude Sonnet 5 | $2.00 / $10.00 | USD 0,0224 (2× más caro) |
+| Claude Opus 5 | $5.00 / $25.00 | USD 0,0559 (5× más caro) |
 
 Cálculo: `costo = (input_tokens/1e6)×precio_input + (output_tokens/1e6)×precio_output`.
 
@@ -61,10 +85,13 @@ un escenario base de **20 legajos por semana** (una hipotecaria chica/
 mediana), y un escenario alto de **200 legajos por semana** para mostrar que
 la conclusión no cambia con el volumen.
 
+Costo por legajo usado en la proyección: **USD 0,011174** (medición real,
+§2.1 — no la estimación de §2.2).
+
 | Escenario | Legajos/semana | Costo semanal (Haiku) | Costo anual (52 sem.) |
 |---|---|---|---|
-| Base | 20 | ≈ USD 0,11 | **≈ USD 5,72** |
-| Alto | 200 | ≈ USD 1,10 | ≈ USD 57,20 |
+| Base | 20 | ≈ USD 0,22 | **≈ USD 11,62** |
+| Alto | 200 | ≈ USD 2,23 | ≈ USD 116,21 |
 
 **Conclusión**: el costo de inferencia es irrelevante frente al problema de
 negocio que se está resolviendo (horas de analista revisando carpetas a

@@ -8,18 +8,24 @@ Claude junto con el contrato de prompts/system_prompt.md + user_prompt.md,
 deja que el modelo llame a la herramienta determinista evaluar_legajo() para
 los dos controles financieros, y escribe el resultado en el Excel maestro.
 
-IMPORTANTE (ver DECISIONES.md, "Iteración 3" y GOBIERNO_Y_RIESGO.md):
-Esta entrega NO tuvo acceso a una ANTHROPIC_API_KEY real. Las 3 corridas
-reales documentadas en corridas/ se ejecutaron con el mismo contrato (mismo
-system/user prompt, misma herramienta evaluar_legajo, mismo Excel de salida)
-pero con Claude actuando directamente dentro de la sesión de Claude Code que
-construyó este repo, usando su conector real de Google Drive en vez de esta
-llamada a la API. Este script queda completo y listo para correr apenas haya
-una API key — es el camino a producción, no un mock.
+HISTORIA (ver DECISIONES.md, Iteraciones 3 y 8, y GOBIERNO_Y_RIESGO.md):
+la primera versión de este repo no tenía ANTHROPIC_API_KEY propia, así que
+las 3 corridas se ejecutaron con Claude actuando dentro de la sesión de
+Claude Code que construyó el repo (mismo contrato, mismo cálculo
+determinista, distinto canal). Una vez que el usuario consiguió una key
+real, se re-corrieron las 3 corridas contra la API de verdad con este mismo
+script (ver `agente/correr_corridas_reales.py`), y `corridas/*/salida.json` +
+`metadata.json` quedaron con el resultado y el `usage` reales de esa
+corrida — no son ambas cosas: son dos generaciones de la misma evidencia,
+documentadas por separado para que quede clara la diferencia.
 
-Uso:
+Uso (legajo suelto):
     export ANTHROPIC_API_KEY=sk-ant-...
     python agente/legajo_agent.py --drive-folder-id <ID_DE_LA_CARPETA_DEL_LEGAJO>
+
+Uso (las 3 corridas reales ya guardadas en corridas/, sin Drive):
+    export ANTHROPIC_API_KEY=sk-ant-...
+    python agente/correr_corridas_reales.py
 """
 
 from __future__ import annotations
@@ -50,20 +56,31 @@ EVALUAR_LEGAJO_TOOL = {
         "Aplica los dos controles financieros duros (cuota/ingreso <= 40%, "
         "LTV <= 35%) de forma determinista y devuelve el resultado de cada "
         "uno más la decisión final. Usar SIEMPRE esta herramienta en vez de "
-        "calcular los porcentajes en el texto de la respuesta."
+        "calcular los porcentajes en el texto de la respuesta. Pasar la "
+        "LISTA cruda de ingresos mensuales tal como aparecen en el legajo — "
+        "NUNCA promediarlos vos mismo antes de llamar a la herramienta, el "
+        "promedio lo calcula esta función (ver DECISIONES.md, Iteración 9: "
+        "un promedio mal calculado por el modelo cambió un resultado en la "
+        "primera corrida real). Para valor_credito_usd usá siempre el monto "
+        "de 'Crédito Aprobado' del legajo, NUNCA el 'Total Crédito (Fee "
+        "incluido)' — son dos montos distintos en el resumen."
     ),
     "strict": True,
     "input_schema": {
         "type": "object",
         "properties": {
             "cuota_mensual_ars": {"type": "number"},
-            "ingreso_neto_mensual_ars": {"type": "number"},
+            "ingresos_mensuales_ars": {
+                "type": "array",
+                "items": {"type": "number"},
+                "minItems": 1,
+            },
             "valor_credito_usd": {"type": "number"},
             "valor_propiedad_usd": {"type": "number"},
         },
         "required": [
             "cuota_mensual_ars",
-            "ingreso_neto_mensual_ars",
+            "ingresos_mensuales_ars",
             "valor_credito_usd",
             "valor_propiedad_usd",
         ],
@@ -129,58 +146,69 @@ def construir_user_prompt(nombre_carpeta: str, ruta_o_id_drive: str, resumen_tex
         "del cliente, ingresos mensuales (propios y otros si los hay), cuota "
         "mensual (USD, ARS y tipo de cambio), valor de mercado de la propiedad "
         "y valor del crédito.\n"
-        "2. Si hay varios meses de ingresos informados, usá el promedio como "
-        "ingreso neto mensual para el Control 1, y mencioná en `observaciones` "
-        "si hay alta volatilidad entre meses.\n"
-        "3. Llamá a la herramienta `evaluar_legajo` con esos números.\n"
+        "2. Si hay varios meses de ingresos informados, pasalos TODOS como "
+        "lista a la herramienta (no promedies vos mismo) — la herramienta "
+        "calcula el promedio y te dice si hay alta volatilidad. Usá ese dato "
+        "para armar `observaciones` si corresponde.\n"
+        "3. Llamá a la herramienta `evaluar_legajo` con esos números "
+        "(usando 'Crédito Aprobado', no 'Total Crédito con fee', para "
+        "valor_credito_usd).\n"
         "4. Completá el JSON de salida con el resultado de la herramienta y tu "
         "extracción de datos."
     )
 
 
 def correr_agente(nombre_carpeta: str, ruta_o_id_drive: str, resumen_texto: str) -> dict:
+    """Corre el agente real contra la API de Anthropic, en 2 llamadas:
+
+    1. Llamada con tool_choice forzado a `evaluar_legajo` — el modelo NO
+       puede responder con texto libre, tiene que extraer los 4 números y
+       llamar a la herramienta determinista (gobierno: nunca calcula a mano).
+    2. Llamada con output_config de esquema fijo, ya con el resultado de la
+       herramienta en el historial, para obtener el JSON final estructurado.
+    """
     client = anthropic.Anthropic()
     user_prompt = construir_user_prompt(nombre_carpeta, ruta_o_id_drive, resumen_texto)
     messages = [{"role": "user", "content": user_prompt}]
 
-    while True:
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            tools=[EVALUAR_LEGAJO_TOOL],
-            messages=messages,
+    call_1 = client.messages.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=SYSTEM_PROMPT,
+        tools=[EVALUAR_LEGAJO_TOOL],
+        tool_choice={"type": "tool", "name": "evaluar_legajo"},
+        messages=messages,
+    )
+
+    tool_use_blocks = [b for b in call_1.content if b.type == "tool_use"]
+    if not tool_use_blocks:
+        raise RuntimeError(
+            "El modelo no llamó a evaluar_legajo pese a tool_choice forzado "
+            f"(stop_reason={call_1.stop_reason}) — no se puede confiar en un "
+            "resultado sin el cálculo determinista."
         )
 
-        tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-        if not tool_use_blocks:
-            break
+    messages.append({"role": "assistant", "content": call_1.content})
+    tool_results = []
+    for block in tool_use_blocks:
+        try:
+            resultado = evaluar_legajo(**block.input)
+            content = json.dumps(resultado, ensure_ascii=False)
+            is_error = False
+        except Exception as exc:  # noqa: BLE001 - se reporta como tool_result de error
+            content = f"Error al evaluar el legajo: {exc}"
+            is_error = True
+        tool_results.append({
+            "type": "tool_result",
+            "tool_use_id": block.id,
+            "content": content,
+            "is_error": is_error,
+        })
+    messages.append({"role": "user", "content": tool_results})
 
-        messages.append({"role": "assistant", "content": response.content})
-        tool_results = []
-        for block in tool_use_blocks:
-            if block.name == "evaluar_legajo":
-                try:
-                    resultado = evaluar_legajo(**block.input)
-                    content = json.dumps(resultado, ensure_ascii=False)
-                    is_error = False
-                except Exception as exc:  # noqa: BLE001 - se reporta como tool_result de error
-                    content = f"Error al evaluar el legajo: {exc}"
-                    is_error = True
-            else:
-                content = f"Herramienta desconocida: {block.name}"
-                is_error = True
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": content,
-                "is_error": is_error,
-            })
-        messages.append({"role": "user", "content": tool_results})
-
-    # Última llamada: forzamos el formato estructurado final sobre la
-    # conversación ya resuelta (con el resultado de la herramienta adentro).
-    final = client.messages.create(
+    # Segunda llamada: formato estructurado final sobre la conversación ya
+    # resuelta (con el resultado de la herramienta adentro).
+    call_2 = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
@@ -188,11 +216,11 @@ def correr_agente(nombre_carpeta: str, ruta_o_id_drive: str, resumen_texto: str)
         messages=messages
         + [{"role": "user", "content": "Devolvé ahora el JSON final según el formato de salida."}],
     )
-    texto = next(b.text for b in final.content if b.type == "text")
+    texto = next(b.text for b in call_2.content if b.type == "text")
 
     uso = {
-        "input_tokens": response.usage.input_tokens + final.usage.input_tokens,
-        "output_tokens": response.usage.output_tokens + final.usage.output_tokens,
+        "input_tokens": call_1.usage.input_tokens + call_2.usage.input_tokens,
+        "output_tokens": call_1.usage.output_tokens + call_2.usage.output_tokens,
     }
     return {"salida": json.loads(texto), "uso_tokens": uso, "modelo": MODEL}
 
@@ -230,9 +258,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print(
-        "Este script necesita ANTHROPIC_API_KEY y un cliente de Google Drive "
-        "real conectado para leer args.drive_folder_id. No se ejecuta en esta "
-        "entrega por falta de API key propia — ver DECISIONES.md.",
+        "Este script todavía no tiene un cliente de Google Drive cableado "
+        "para leer --drive-folder-id directamente (en esta entrega, la "
+        "lectura de Drive la hizo el conector MCP de Claude Code — ver "
+        "corridas/README.md). Para reproducir las 3 corridas reales con la "
+        "API ya sin depender de Drive, usá:\n"
+        "    python agente/correr_corridas_reales.py",
         file=sys.stderr,
     )
     sys.exit(1)

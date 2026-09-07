@@ -8,69 +8,67 @@ Creación agentes de IA"** (compartida por el usuario), subcarpetas:
 - `Crédito 3 - Lopez` → `03 - #3 Lopez.xlsx`
 
 Cada uno de esos Excel tiene una hoja "Resumen Carpeta" con los datos del
-cliente y del crédito. Ese es el dato de entrada real de cada corrida.
+cliente y del crédito. Ese es el dato de entrada real de cada corrida
+(`entrada.md` en cada carpeta).
 
-## Cómo se ejecutaron estas 3 corridas (y por qué no vía `agente/legajo_agent.py`)
+## Cómo se generó esta evidencia (dos etapas, documentadas en DECISIONES.md)
 
-Esta entrega no tuvo acceso a una `ANTHROPIC_API_KEY` propia (ver
-`DECISIONES.md`, Iteración 3). En vez de simular los resultados, las 3
-corridas se ejecutaron de verdad, con el mismo contrato (mismo
-`prompts/system_prompt.md`, mismo `prompts/user_prompt.md`, mismos dos
-controles duros), pero con dos componentes reales distintos a
-`legajo_agent.py`:
+**Etapa 1 (Iteración 3)** — sin `ANTHROPIC_API_KEY` propia todavía: la
+lectura del legajo se hizo con el conector real de Google Drive de la sesión
+de Claude Code que construyó este repo, y el cálculo de los controles
+corriendo de verdad `python agente/tools.py`. Esa primera versión de
+`salida.json`/`metadata.json` quedó reemplazada por la Etapa 2.
 
-1. **Lectura del legajo (herramienta 1 — conector real)**: Claude, corriendo
-   dentro de la sesión de Claude Code que construyó este repo, usó su
-   conector MCP de Google Drive (`mcp__Google_Drive__search_files`) para
-   leer el contenido real de cada Excel directamente de la carpeta
-   compartida. El texto de `entrada.md` en cada corrida es el
-   `contentSnippet` devuelto por esa llamada, sin editar.
-2. **Cálculo de los controles (herramienta 2 — código determinista)**: los
-   porcentajes de cada control se calcularon ejecutando
-   `python agente/tools.py` de verdad (no a mano, no estimado por el LLM) —
-   ver la salida real de esa ejecución más abajo.
+**Etapa 2 (Iteraciones 8 y 9)** — el usuario consiguió una API key propia.
+`agente/correr_corridas_reales.py` corrió el agente real (`legajo_agent.py`)
+contra la API de Anthropic para los 3 legajos, usando exactamente el texto
+de `entrada.md` ya capturado en la Etapa 1 (sin volver a tocar Drive). La
+primera corrida de esta etapa encontró un bug real (el modelo promediaba mal
+los ingresos mensuales — ver Iteración 9), que se corrigió en
+`agente/tools.py`, y se volvió a correr. **`salida.json` y `metadata.json`
+de cada carpeta son el resultado de esta segunda corrida, ya con el fix
+aplicado**, con `usage` y costo reales de `response.usage` (no estimados).
 
-La extracción de campos (nombre, jurisdicción, ingresos, etc.) y la redacción
-de `observaciones`/`motivo` las hizo el mismo modelo (Claude) aplicando
-literalmente las reglas de `prompts/system_prompt.md`, tal como lo haría
-`legajo_agent.py` en producción con la API — la diferencia es el canal
-(sesión de Claude Code vs. llamada a la API con una key propia), no el
-contrato ni la lógica.
+### Cómo reproducir estas 3 corridas
 
-### Salida real de `python agente/tools.py` (las 3 corridas, corrida en esta entrega)
-
-```
-Perez -> ingreso promedio: 2707521.33
-{
-  "control_1_cuota_ingreso": {"valor_medido_pct": 27.3, "limite_pct": 40.0, "aprueba": true},
-  "control_2_ltv": {"valor_medido_pct": 20.4, "limite_pct": 35.0, "aprueba": true},
-  "resultado_final": "ok credito aprobado",
-  "motivo": null
-}
-
-Gonzalez -> ingreso promedio: 2709944.17
-{
-  "control_1_cuota_ingreso": {"valor_medido_pct": 39.4, "limite_pct": 40.0, "aprueba": true},
-  "control_2_ltv": {"valor_medido_pct": 27.5, "limite_pct": 35.0, "aprueba": true},
-  "resultado_final": "ok credito aprobado",
-  "motivo": null
-}
-
-Lopez -> ingreso promedio: 1702509.5
-{
-  "control_1_cuota_ingreso": {"valor_medido_pct": 43.2, "limite_pct": 40.0, "aprueba": false},
-  "control_2_ltv": {"valor_medido_pct": 40.5, "limite_pct": 35.0, "aprueba": false},
-  "resultado_final": "credito no aprobado",
-  "motivo": "Relación cuota/ingreso de 43.2% supera el límite de 40%; LTV de 40.5% supera el límite de 35%"
-}
+```bash
+pip install -r agente/requirements.txt
+export ANTHROPIC_API_KEY=sk-ant-...
+python agente/correr_corridas_reales.py
 ```
 
-Un tercero puede reconstruir exactamente estos números corriendo
-`python agente/tools.py` (no requiere API key — son solo los dos controles
-deterministas) y comparándolos contra los `entrada.md`/`salida.json` de cada
-corrida.
+Lee `corridas/*/entrada.md`, corre el agente real contra la API para cada
+legajo, sobrescribe `salida.json`/`metadata.json` con el resultado y el
+costo real, y regenera `output/legajos_maestro.xlsx`. No requiere acceso a
+Google Drive — el texto de entrada ya está guardado en este repo.
+
+Para verificar sólo los dos controles financieros (sin API key, en
+segundos):
+
+```bash
+python agente/tools.py
+```
+
+## Resultado (verificado dos veces: por el LLM contra la API real, y por el cálculo determinista standalone)
+
+| Legajo | Control 1 (cuota/ingreso) | Control 2 (LTV) | Resultado |
+|---|---|---|---|
+| Perez | 27,3% — OK | 20,4% — OK | ok crédito aprobado |
+| Gonzalez | 39,4% — OK (margen ajustado) | 27,5% — OK | ok crédito aprobado |
+| Lopez | 43,2% — NO CUMPLE | 40,5% — NO CUMPLE | crédito no aprobado |
+
+## Costo real medido (`response.usage`, modelo `claude-haiku-4-5`)
+
+| Legajo | Input tokens | Output tokens | Costo |
+|---|---|---|---|
+| Perez | 8 524 | 478 | USD 0,010914 |
+| Gonzalez | 8 759 | 497 | USD 0,011244 |
+| Lopez | 8 650 | 543 | USD 0,011365 |
+| **Total** | **25 933** | **1 518** | **USD 0,033523** |
+
+Ver `ANALISIS_ECONOMICO.md` para la proyección semanal/anual con este dato.
 
 ## Fecha
 
-Las 3 corridas se ejecutaron el **2026-09-07** (mismo día en que el usuario
-conectó Google Drive y pidió avanzar con la consigna).
+Etapa 1: 2026-09-07 (lectura de Drive). Etapa 2 (corridas reales contra la
+API, con el fix aplicado): 2026-09-07, mismo día.

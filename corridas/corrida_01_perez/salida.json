@@ -1,7 +1,7 @@
 {
   "nro_credito": "#1",
   "jurisdiccion": "Mar del Plata",
-  "cliente": "Juan Perez",
+  "cliente": "Perez",
   "ingresos_propios_ars": 2707521.33,
   "otros_ingresos_ars": 0,
   "total_ingresos_ars": 2707521.33,
@@ -16,5 +16,5 @@
   "resultado_control_2": "ok credito",
   "resultado_final": "ok credito aprobado",
   "motivo": null,
-  "observaciones": "Ingresos mensuales estables (jun-ago 2026, entre ARS 2.587.123 y ARS 2.809.243). Primera propiedad, uso familiar. Veraz 758. Ambos controles aprueban con margen amplio."
+  "observaciones": "Ingresos verificados para 3 meses (junio-agosto 2026). Variación de ingresos del 8.6% entre el mínimo y máximo, dentro de rango normal. Cliente es representante legal de colegio con antigüedad de 2 años y 6 meses en el cargo. Primera vivienda, propiedad única y permanente. Documentación de ingresos requiere verificación según condición tributaria (se recomienda DDJJ o comprobante de ingresos formal del empleador)."
 }

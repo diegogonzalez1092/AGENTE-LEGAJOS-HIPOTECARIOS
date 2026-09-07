@@ -22,11 +22,13 @@ estructurado según el formato de salida definido en tu system prompt.
    la propiedad), nombre del cliente, ingresos mensuales (propios y otros si
    los hay), cuota mensual (en USD, en ARS y el tipo de cambio usado), valor
    de mercado de la propiedad y valor del crédito.
-2. Si hay varios meses de ingresos informados, usá el promedio como ingreso
-   neto mensual para el Control 1, y mencioná en `observaciones` si hay alta
-   volatilidad entre meses.
-3. Llamá a la herramienta `evaluar_legajo` con esos números — no calcules
-   los porcentajes vos mismo.
+2. Si hay varios meses de ingresos informados, pasalos TODOS como lista a
+   `evaluar_legajo` — no los promedies vos mismo, la herramienta calcula el
+   promedio y te devuelve si hay alta volatilidad para que lo menciones en
+   `observaciones`.
+3. Llamá a la herramienta `evaluar_legajo` con esos números (usando
+   "Crédito Aprobado", no "Total Crédito con fee", para valor_credito_usd) —
+   no calcules los porcentajes ni el promedio vos mismo.
 4. Completá el JSON de salida con el resultado de la herramienta y tu
    extracción de datos. Si algún dato no está disponible en el resumen,
    usá `null` y explicalo en `observaciones`.

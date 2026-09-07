@@ -1,10 +1,10 @@
 {
   "nro_credito": "364313",
-  "jurisdiccion": "Córdoba",
+  "jurisdiccion": "CORDOBA",
   "cliente": "Lopez",
-  "ingresos_propios_ars": 1702509.50,
+  "ingresos_propios_ars": 1702509.5,
   "otros_ingresos_ars": 0,
-  "total_ingresos_ars": 1702509.50,
+  "total_ingresos_ars": 1702509.5,
   "cuota_usd": 523.47,
   "tipo_cambio": 1405,
   "cuota_ars": 735475.99,
@@ -16,5 +16,5 @@
   "resultado_control_2": "no cumple",
   "resultado_final": "credito no aprobado",
   "motivo": "Relación cuota/ingreso de 43.2% supera el límite de 40%; LTV de 40.5% supera el límite de 35%",
-  "observaciones": "Ingresos mensuales extremadamente volátiles (mínimo ARS 70.000 en abril, máximo ARS 6.000.000 en agosto): típico de monotributista de herrería dependiente de contratos puntuales de obra pública. Aun promediando los 6 meses, el legajo no cumple ninguno de los dos controles duros. Además, a diferencia de los otros dos legajos, faltan los checks de 'Clausula' y 'Valor de escritura' en el resumen (vienen vacíos) — el analista humano debería confirmar si esa verificación notarial ya se hizo antes de comunicar el rechazo. Veraz 734 (aceptable), pero no compensa el incumplimiento financiero."
+  "observaciones": "Ingresos con alta volatilidad: mínimo ARS 70.000 (abril), máximo ARS 6.000.000 (agosto), variación de 8.471%. Cliente monotributista (herrería); se recomienda verificar documentación: últimos 6 meses de facturación según protocolo de acreditación de ingresos para monotributistas. El promedio utilizado (ARS 1.702.509,50) se basa en 6 meses de datos informados, pero la volatilidad extrema sugiere ingresos irregulares típicos de trabajos por encargo."
 }

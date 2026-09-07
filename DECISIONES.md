@@ -111,3 +111,80 @@ Se evaluaron `claude-haiku-4-5`, `claude-sonnet-5` y `claude-opus-5` para
 acotada + una tool call + JSON de esquema fijo, con la aritmética ya sacada
 del LLM) no necesita el razonamiento de un modelo más grande — ver
 `ANALISIS_ECONOMICO.md` para la comparación de costo entre los tres.
+
+## Iteración 8 — Se consiguió una API key real y se corrió el agente de verdad
+
+El usuario pidió cómo conseguir una `ANTHROPIC_API_KEY` propia y la pasó por
+el chat para que este agente la usara. Dos problemas prácticos, en orden:
+
+1. La primera key que pasó no estaba asociada a un workspace
+   (`This API key is not scoped to a workspace...`, error 400) — Anthropic
+   la rechazó pidiendo un header `anthropic-workspace-id` o una key generada
+   *dentro* de un workspace específico. Se le explicó la diferencia y generó
+   una segunda key desde la pestaña "API Keys" de un workspace concreto, que
+   sí funcionó.
+2. Con la key correcta, se corrió `agente/correr_corridas_reales.py` (un
+   driver nuevo que lee `corridas/*/entrada.md` — el mismo texto real
+   capturado de Drive en la Iteración 3 — y llama a
+   `legajo_agent.correr_agente()` de verdad, dos llamadas por legajo: una
+   con `tool_choice` forzado a `evaluar_legajo`, otra con
+   `output_config.format` para el JSON final). Esta corrida sí generó
+   `response.usage` real: costo total de las 3 corridas, USD 0,0305; ver
+   Iteración 9 para por qué se volvió a correr una segunda vez.
+
+`corridas/*/metadata.json` y `ANALISIS_ECONOMICO.md` se actualizaron con el
+costo medido real, reemplazando la estimación por caracteres de la
+Iteración 3.
+
+## Iteración 9 — La primera corrida real encontró un bug de verdad (y se corrigió)
+
+Al revisar el resultado real de la primera corrida contra la API (Iteración
+8), el legajo **Lopez** — el único de los tres que debía rechazarse — salió
+con el Control 1 en **"ok credito" (36,1%)**, contradiciendo el 43,2% que
+arroja el propio Excel del legajo y el cálculo determinista de
+`agente/tools.py`. Comparando la entrada real:
+
+- La versión de `evaluar_legajo` de ese momento recibía
+  `ingreso_neto_mensual_ars` como un único número **ya promediado por el
+  LLM**. Para Lopez, el modelo calculó un promedio de ARS 2.038.609 sobre
+  los 6 meses informados (ARS 70.000 a ARS 6.000.000) — el promedio correcto
+  es ARS 1.702.509,50. Un error de aritmética del modelo, exactamente el
+  tipo de falla que el diseño decía evitar ("el LLM nunca hace la cuenta"),
+  colado por una rendija: la cuenta que sí hacía el LLM era el promedio de
+  ingresos, no el control final.
+- Además, tanto Perez (Control 2: 21,6% en vez de 20,4%) como Lopez (Control
+  2: 42,9% en vez de 40,5%) mostraron el LTV calculado con "Total Crédito
+  (Fee incluido)" en vez de "Crédito Aprobado" — dos cifras distintas en el
+  resumen que el modelo no distinguió de forma consistente. En Perez no
+  cambiaba el resultado final (ambos valores aprueban); en Lopez tampoco
+  cambiaba el resultado final (ambos valores rechazan), pero si el negocio
+  tuviera el límite más cerca del 40-42%, sí habría cambiado una aprobación.
+
+**Corrección aplicada** (no fue un ajuste de prompt nada más — fue un
+cambio de contrato de la herramienta): `evaluar_legajo` ahora recibe
+`ingresos_mensuales_ars` como **lista cruda**, y el promedio (más un cálculo
+de volatilidad) lo hace `agente/tools.py::promediar_ingresos`, código
+determinista. Se agregó también una regla explícita de negocio: usar
+siempre "Crédito Aprobado" (nunca "Total Crédito con fee") para el Control 2.
+Ambos cambios se reflejan en `prompts/system_prompt.md`,
+`prompts/user_prompt.md` y el `input_schema` de la tool en
+`agente/legajo_agent.py`.
+
+Se volvió a correr `agente/correr_corridas_reales.py` con la key real. Los
+tres resultados finales coincidieron esta vez, número a número, con
+`agente/tools.py` corrido en modo standalone:
+
+| Legajo | Control 1 | Control 2 | Resultado |
+|---|---|---|---|
+| Perez | 27,3% | 20,4% | ok crédito aprobado |
+| Gonzalez | 39,4% | 27,5% | ok crédito aprobado |
+| Lopez | 43,2% | 40,5% | crédito no aprobado |
+
+Esto es, de las 9 decisiones documentadas en este proyecto, la más
+importante para la nota del requisito 4: no es una falla hipotética
+mencionada por cumplir — es una falla real, encontrada corriendo el sistema
+de verdad contra la API, con impacto real (cambiaba si a alguien se le
+aprobaba o no un crédito), y cerrada con un cambio de diseño verificable
+(no con una instrucción de prompt más estricta, que no habría garantizado
+nada). Ver `GOBIERNO_Y_RIESGO.md` §2 para el registro de este riesgo ya
+cerrado.

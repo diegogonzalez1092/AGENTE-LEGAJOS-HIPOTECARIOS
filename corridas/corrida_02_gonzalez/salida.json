@@ -1,13 +1,13 @@
 {
   "nro_credito": "#2",
-  "jurisdiccion": "Mar del Plata",
-  "cliente": "Pablo Gonzalez",
+  "jurisdiccion": "MAR DEL PLATA",
+  "cliente": "Gonzalez",
   "ingresos_propios_ars": 2709944.17,
   "otros_ingresos_ars": 0,
   "total_ingresos_ars": 2709944.17,
   "cuota_usd": 805.26,
   "tipo_cambio": 1325,
-  "cuota_ars": 1066974.90,
+  "cuota_ars": 1066974.9,
   "control_1_pct": 39.4,
   "resultado_control_1": "ok credito",
   "valor_propiedad_usd": 120000,
@@ -16,5 +16,5 @@
   "resultado_control_2": "ok credito",
   "resultado_final": "ok credito aprobado",
   "motivo": null,
-  "observaciones": "Monotributista categoría C con facturación mensual variable (ARS 2.150.300 a ARS 3.029.535). Control 1 aprueba con margen muy ajustado (39.4% vs. límite 40%) — se recomienda revisión manual adicional del comité de crédito antes de firmar, dado lo estrecho del margen. Veraz 934."
+  "observaciones": "Cliente monotributista categoría C con antigüedad de 9 años. Ingresos mensuales facturados oscilan entre ARS 2,150,300 y ARS 3,029,535 (variación del 40.9%), sin alcanzar volatilidad alta según criterio técnico (>100%). Ambos controles cumplen: cuota/ingreso en 39.4% (límite 40%) y LTV en 27.5% (límite 35%). Se requiere verificar documentación de acreditación de ingresos: declaración jurada de facturación de últimos 6 meses ante ARCA según condición de monotributista."
 }

@@ -46,13 +46,21 @@ Drive compartida por el usuario ("Trabajo Final - Creación agentes de IA"),
 con 3 subcarpetas (Perez, Gonzalez, Lopez), cada una con un Excel "Resumen
 Carpeta" real.
 
-## Resultado de las 3 corridas reales
+## Resultado de las 3 corridas reales (contra la API real de Anthropic)
 
 | Legajo | Jurisdicción | Control 1 (cuota/ingreso) | Control 2 (LTV) | Resultado final |
 |---|---|---|---|---|
 | Perez (#1) | Mar del Plata | 27,3% — OK | 20,4% — OK | **ok crédito aprobado** |
 | Gonzalez (#2) | Mar del Plata | 39,4% — OK (margen ajustado) | 27,5% — OK | **ok crédito aprobado** |
 | Lopez (364313) | Córdoba | 43,2% — NO CUMPLE | 40,5% — NO CUMPLE | **crédito no aprobado** |
+
+Costo real medido (`response.usage`, `claude-haiku-4-5`): **USD 0,0335** las
+3 corridas juntas (≈USD 0,0112 por legajo) — ver `ANALISIS_ECONOMICO.md`.
+
+La primera vez que se corrió esto contra la API real, el resultado de Lopez
+vino mal (un bug real de promedio de ingresos calculado por el modelo) — se
+encontró, se corrigió y se volvió a correr. Ver `DECISIONES.md`, Iteración 9,
+para la historia completa; es la evidencia más importante del proyecto.
 
 Detalle completo, entrada real y JSON de salida de cada corrida:
 [`corridas/`](corridas/). Excel maestro con las 3 filas ya cargadas:
@@ -105,20 +113,31 @@ python agente/tools.py
 Corre los dos controles deterministas sobre los 3 legajos reales y muestra
 los mismos porcentajes documentados en `corridas/`.
 
-### Correr el agente completo contra la API real (requiere API key propia)
+### Reproducir las 3 corridas reales contra la API (requiere API key propia)
 
 ```bash
 pip install -r agente/requirements.txt
 export ANTHROPIC_API_KEY=sk-ant-...
+python agente/correr_corridas_reales.py
+```
+
+Corre `legajo_agent.correr_agente()` de verdad para los 3 legajos, usando el
+texto ya capturado en `corridas/*/entrada.md` (no necesita Drive), y
+sobrescribe `salida.json`/`metadata.json` con el resultado y el costo real
+de `response.usage`. Esto es lo que efectivamente se corrió para esta
+entrega — ver `DECISIONES.md`, Iteraciones 8 y 9.
+
+### Correr el agente contra un legajo nuevo, vía Drive (camino de producción)
+
+```bash
 python agente/legajo_agent.py --drive-folder-id <ID_DE_LA_CARPETA_DEL_LEGAJO>
 ```
 
-Este es el camino de producción: lee el legajo desde Google Drive, llama a
-Claude con el contrato de `prompts/`, deja que el modelo use la herramienta
-`evaluar_legajo`, y agrega la fila resultante al Excel maestro. No se corrió
-contra la API real en esta entrega por no contar con una key propia — ver
-`DECISIONES.md`, Iteración 3, y `corridas/README.md` para cómo se generó la
-evidencia real sin ella.
+Este es el próximo paso natural para producción (que un humano dispare el
+agente sobre una carpeta nueva de Drive en vez de un texto ya guardado), pero
+el cliente de Google Drive todavía no está cableado dentro de este script —
+en esta entrega esa lectura la hizo el conector MCP de Claude Code (ver
+`corridas/README.md`).
 
 ## Dónde está cada requisito de la rúbrica
 
