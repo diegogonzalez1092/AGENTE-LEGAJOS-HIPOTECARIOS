@@ -7,19 +7,30 @@ Creación agentes de IA"** (compartida por el usuario), subcarpetas:
 - `Crédito 2 - Gonzalez` → `02 - #2 Gonzalez.xlsx`
 - `Crédito 3 - Lopez` → `03 - #3 Lopez.xlsx`
 
-Cada uno de esos Excel tiene una hoja "Resumen Carpeta" con los datos del
-cliente y del crédito. Ese es el dato de entrada real de cada corrida.
+Más un cuarto caso, `corrida_04_incompleto`: un legajo **sintético**
+(construido a mano, no viene de Drive) para probar el manejo de datos
+faltantes — ver Iteración 11 en `DECISIONES.md`. No entra al Excel maestro.
+
+Cada uno de los 3 Excel reales tiene una hoja "Resumen Carpeta" con los
+datos del cliente y del crédito. Ese es el dato de entrada real de cada
+corrida.
 
 Cada carpeta de corrida trae los tres artefactos que pide la consigna, cada
 uno en su propio archivo:
 
 - `entrada.md` — el dato de entrada real (texto crudo del legajo + qué
   herramienta lo trajo).
-- `salida.json` — el resultado estructurado real del agente.
-- `fecha.txt` — fecha/hora UTC exacta de la corrida (también repetida
-  dentro de `metadata.json` y en el encabezado de `entrada.md`, para que no
-  dependa de un solo archivo).
-- `metadata.json` — extra: canal de ejecución, modelo, tokens y costo real.
+- `salida.json` — el resultado estructurado de la corrida **más reciente**.
+- `fecha.txt` — fecha/hora UTC de la corrida más reciente.
+- `metadata.json` — extra: canal de ejecución, modelo, tokens y costo de
+  la corrida más reciente.
+- `runs/<timestamp>/` — **el historial completo, sin sobrescribir**: cada
+  vez que se corre `agente/correr_corridas_reales.py` se agrega una carpeta
+  nueva acá con su propio `salida.json`/`metadata.json`/`fecha.txt`. Los
+  4 archivos de arriba son solo un espejo de la carpeta de `runs/` más
+  reciente, para que el resto del repo no tenga que saber el timestamp
+  exacto (ver Iteración 11 en `DECISIONES.md` — sugerencia del agente
+  evaluador del grupo).
 
 ## Cómo se generó esta evidencia (dos etapas, documentadas en DECISIONES.md)
 
@@ -42,12 +53,18 @@ que el ingreso de agosto de Lopez no coincidía con los comprobantes reales.
 Se verificó contra la carpeta "Ingresos" de los 3 legajos en Drive (solo
 Lopez tenía discrepancia), se agregó a `agente/tools.py` la detección de
 meses de ingreso atípicos, se actualizó `entrada.md` de los 3 legajos con la
-verificación cruzada, y se volvió a correr contra la API. **`salida.json`,
-`fecha.txt` y `metadata.json` de cada carpeta son el resultado de esta
-tercera corrida**, con `usage` y costo reales de `response.usage` (no
-estimados) y ya con la corrección de datos de Lopez incorporada.
+verificación cruzada, y se volvió a correr contra la API.
 
-### Cómo reproducir estas 3 corridas
+**Etapa 4 (Iteración 11)** — se probó el agente evaluador del parcial del
+grupo (`evaluador-grupo-33`) contra este repo: 96/100, con 3 sugerencias.
+Se implementaron las tres: cliente real de Google Drive
+(`agente/drive_client.py`), esquema de salida compatible con `null` para
+legajos incompletos (con el cuarto caso de prueba,
+`corrida_04_incompleto`), y corridas versionadas en `runs/` en vez de
+sobrescribirse. Esta es la etapa que dejó la estructura de carpetas que ves
+ahora — con historial completo de corridas, no solo la última.
+
+### Cómo reproducir estas corridas
 
 ```bash
 pip install -r agente/requirements.txt
@@ -56,9 +73,12 @@ python agente/correr_corridas_reales.py
 ```
 
 Lee `corridas/*/entrada.md`, corre el agente real contra la API para cada
-legajo, sobrescribe `salida.json`/`metadata.json` con el resultado y el
-costo real, y regenera `output/legajos_maestro.xlsx`. No requiere acceso a
-Google Drive — el texto de entrada ya está guardado en este repo.
+legajo (los 3 de negocio + el caso de prueba incompleto), guarda cada
+corrida en `corridas/<caso>/runs/<timestamp>/` sin tocar corridas
+anteriores, actualiza el espejo de "última corrida" a nivel
+`corridas/<caso>/`, y regenera `output/legajos_maestro.xlsx` (solo con los
+3 legajos de negocio). No requiere acceso a Google Drive — el texto de
+entrada ya está guardado en este repo.
 
 Para verificar sólo los dos controles financieros (sin API key, en
 segundos):
@@ -75,14 +95,15 @@ python agente/tools.py
 | Gonzalez | Comprobantes reales (facturación), coinciden exacto con el resumen | 39,4% — OK (margen ajustado) | 27,5% — OK | ok crédito aprobado |
 | Lopez | Comprobantes reales (facturación) — **no** el Resumen Carpeta, que tenía 2 meses mal cargados | 41,5% — NO CUMPLE | 40,5% — NO CUMPLE | crédito no aprobado, **+ advertencia de ingreso atípico en agosto** (6,4x la mediana) |
 
-## Costo real medido (`response.usage`, modelo `claude-haiku-4-5`, corrida final con verificación de comprobantes)
+## Costo real medido (`response.usage`, modelo `claude-haiku-4-5`, corrida más reciente)
 
 | Legajo | Input tokens | Output tokens | Costo |
 |---|---|---|---|
-| Perez | 10 307 | 471 | USD 0,012662 |
-| Gonzalez | 10 761 | 524 | USD 0,013381 |
-| Lopez | 11 971 | 619 | USD 0,015066 |
-| **Total** | **33 039** | **1 614** | **USD 0,041109** |
+| Perez | 11 311 | 606 | USD 0,014341 |
+| Gonzalez | 11 765 | 659 | USD 0,015060 |
+| Lopez | 12 975 | 959 | USD 0,017770 |
+| **Total (3 legajos de negocio)** | **36 051** | **2 224** | **USD 0,047171** |
+| Martinez (caso de prueba incompleto) | 10 780 | 608 | USD 0,013820 |
 
 Ver `ANALISIS_ECONOMICO.md` para la proyección semanal/anual con este dato.
 
@@ -90,4 +111,6 @@ Ver `ANALISIS_ECONOMICO.md` para la proyección semanal/anual con este dato.
 
 Etapa 1: 2026-09-07 (lectura de Drive). Etapa 2 (fix del promedio, Iteración
 9): 2026-09-07. Etapa 3 (verificación de comprobantes y detección de
-atípicos, Iteración 10): 2026-09-07 — mismo día las tres.
+atípicos, Iteración 10): 2026-09-07. Etapa 4 (cliente de Drive, esquema con
+null, corridas versionadas, Iteración 11): 2026-09-07 — mismo día las
+cuatro.

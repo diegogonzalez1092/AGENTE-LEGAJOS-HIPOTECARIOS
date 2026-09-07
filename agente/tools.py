@@ -243,7 +243,7 @@ if __name__ == "__main__":
         # DECISIONES.md, Iteración 11): no trae valor de mercado de la
         # propiedad. Control 1 sí se puede evaluar; Control 2, no.
         "Incompleto (sin valor de propiedad)": dict(
-            cuota_mensual_ars=450000.0,
+            cuota_mensual_ars=652500.0,
             ingresos_mensuales_ars=[2000000, 2100000, 1950000],
             valor_credito_usd=25000,
             valor_propiedad_usd=None,

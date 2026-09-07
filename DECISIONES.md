@@ -264,3 +264,69 @@ sistema se corrigió para que la próxima vez lo detecte solo. Es la segunda
 vez en este proyecto (después de la Iteración 9) que una revisión externa
 —no un ajuste preventivo de prompt— es lo que realmente mejora el sistema.
 Ver `GOBIERNO_Y_RIESGO.md` §2 y §4 para cómo queda reflejado este hallazgo.
+
+## Iteración 11 — Feedback de un tercero real: el agente evaluador del grupo (parcial de la materia)
+
+En paralelo a este trabajo final, el usuario y su grupo (`evaluador-grupo-33`)
+construyeron un **agente evaluador** para el parcial de la materia — un
+sistema que corrige trabajos finales aplicando la rúbrica oficial. Se probó
+ese evaluador contra este repo (subiendo un `.zip` a
+https://evaluador-grupo-33-ahs2yhamgmghk5vivjdbc5.streamlit.app), y devolvió
+**96/100**, más tres sugerencias concretas de mejora. Se evaluaron y se
+implementaron las tres en serio — no como parches cosméticos para "sumar
+puntos", sino resolviendo el problema real detrás de cada una:
+
+**1. "Implementar el cliente de Google Drive en `agente/legajo_agent.py`"**
+— tenía razón: ese archivo tenía un stub que imprimía un error y cortaba.
+Se escribió `agente/drive_client.py`, un cliente real de la API v3 de
+Google Drive (`google-api-python-client` + `google-auth`, scope de solo
+lectura), que lee el "Resumen Carpeta" y, si existe, la carpeta
+"Ingresos" — siguiendo el mismo patrón que se usó a mano en las
+Iteraciones 8-10. **Honestidad sobre el alcance**: no había una cuenta de
+servicio de Google Cloud disponible en este entorno para probarlo de
+punta a punta contra Drive real — se verificó que importa sin errores y
+que la conversión de `.xlsx` a texto reproduce el mismo formato que se
+usó en las corridas reales (comparado a mano contra `corridas/*/entrada.md`),
+pero la prueba end-to-end contra credenciales reales queda pendiente y así
+se documenta, en vez de afirmar que "ya funciona" sin haberlo corrido.
+
+**2. "Agregar una prueba reproducible con un legajo incompleto que valide
+un esquema de salida compatible con null"** — esta sugerencia expuso un
+problema de diseño real, no solo una prueba faltante: `evaluar_legajo`
+tenía sus 4 parámetros como `required` y `tool_choice` forzado a llamar
+siempre la herramienta — si un dato faltaba, no había ninguna forma
+correcta de responder sin que el LLM inventara un número o decidiera por
+su cuenta no llamar a la herramienta (reabriendo el riesgo de la
+Iteración 9). Se le preguntó al usuario cómo resolverlo (ver la pregunta
+de esta misma conversación) y se eligió la opción que preserva la
+garantía de gobierno: la herramienta ahora acepta `null` en cualquier
+campo, sigue llamándose siempre, y es el código determinista — no el
+LLM — el que decide qué control se puede evaluar y cuál no
+(`datos_faltantes`). Se armó `corridas/corrida_04_incompleto` (un legajo
+sintético sin valor de mercado de la propiedad) y se corrió contra la API
+real: el agente devolvió `resultado_control_1: "ok credito"` (32,4%,
+correcto), `resultado_control_2: null`, `resultado_final: "no evaluable"`
+y `datos_faltantes: ["valor_propiedad_usd"]` — sin inventar ningún
+número. Este caso no entra a `output/legajos_maestro.xlsx` (es un caso de
+prueba, no un legajo real de negocio).
+
+**3. "Preservar cada corrida en una carpeta versionada en lugar de
+sobrescribir los artefactos anteriores"** — tenía razón: cada corrida de
+`agente/correr_corridas_reales.py` pisaba `salida.json`/`metadata.json`
+de la corrida anterior, así que las Iteraciones 8, 9 y 10 de este mismo
+documento describen corridas cuya evidencia cruda ya no estaba en el
+repo (solo el resultado final). Se rediseñó para que cada corrida quede
+en `corridas/<caso>/runs/<timestamp>/` sin tocar las anteriores, y los
+archivos a nivel `corridas/<caso>/` pasan a ser un espejo de la corrida
+más reciente (para no romper las referencias que ya existen en el resto
+del repo). A partir de este commit, la evidencia de cada corrida es
+acumulativa, no reemplazable.
+
+**Por qué importa para la nota**: esto es doblemente relevante para el
+requisito 4 (proceso documentado) — no solo por el ajuste en sí, sino
+porque el feedback vino de **otro agente real, construido por otro grupo,
+con otra rúbrica**, no de una autoevaluación. Cerrar en serio ese feedback
+(en vez de solo subir el puntaje) es la clase de calibración cruzada que
+la consigna del parcial le pide a `evaluador-grupo-33` hacer con criterio
+humano — acá pasó al revés: un agente evaluador calibró (indirectamente)
+este agente.

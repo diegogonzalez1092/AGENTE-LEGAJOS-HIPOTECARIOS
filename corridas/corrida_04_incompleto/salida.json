@@ -1,0 +1,23 @@
+{
+  "nro_credito": "#4",
+  "jurisdiccion": "Rosario",
+  "cliente": "Martinez",
+  "ingresos_propios_ars": 2016666.67,
+  "otros_ingresos_ars": null,
+  "total_ingresos_ars": 2016666.67,
+  "cuota_usd": 450.0,
+  "tipo_cambio": 1450,
+  "cuota_ars": 652500.0,
+  "control_1_pct": 32.4,
+  "resultado_control_1": "ok credito",
+  "valor_propiedad_usd": null,
+  "valor_credito_usd": 25000,
+  "control_2_pct": null,
+  "resultado_control_2": "no evaluable",
+  "resultado_final": "no evaluable",
+  "motivo": "Falta valor de mercado de la propiedad para evaluar Control 2 (LTV). El Control 1 (Cuota/Ingreso) aprueba en 32.4%, pero sin tasación no es posible completar la evaluación técnica.",
+  "datos_faltantes": [
+    "valor_propiedad_usd"
+  ],
+  "observaciones": "El legajo está pendiente de tasación/informe de valor de mercado del inmueble. Según el resumen, 'Martinez reservó la propiedad pero todavía no llegó la tasación / informe de valor de mercado del inmueble'. Los ingresos mensuales son estables (variación 7.7%, sin outliers): junio ARS 2.000.000, julio ARS 1.950.000, agosto ARS 2.100.000. La cuota mensual de ARS 652.500 representa el 32,4% del ingreso promedio, lo que cumple el Control 1 (límite 40%). Sin embargo, no es posible calcular el LTV (Control 2) ni emitir una recomendación final hasta que se obtenga la tasación de la propiedad. Se recomienda solicitar al cliente/tasador el informe de valor de mercado del inmueble para completar el análisis."
+}

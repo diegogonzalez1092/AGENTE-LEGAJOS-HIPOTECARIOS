@@ -1,13 +1,13 @@
 {
-  "fecha_hora_utc": "2026-09-07T13:07:28.846105+00:00",
-  "run_id": "20260907T130728Z",
-  "legajo": "Legajo Gonzalez (Crédito #2)",
+  "fecha_hora_utc": "2026-09-07T13:08:04.141848+00:00",
+  "run_id": "20260907T130804Z",
+  "legajo": "Legajo incompleto (caso de prueba sintético)",
   "canal_de_ejecucion": "API real de Anthropic (claude-haiku-4-5) vía agente/legajo_agent.py::correr_agente",
   "modelo": "claude-haiku-4-5",
   "uso_tokens": {
-    "input_tokens": 11765,
-    "output_tokens": 659
+    "input_tokens": 10780,
+    "output_tokens": 608
   },
-  "costo_usd": 0.01506,
+  "costo_usd": 0.01382,
   "nota": "Corrida ejecutada contra la API real de Anthropic (ver DECISIONES.md, Iteración 8). agente/tools.py::evaluar_legajo recibe la lista cruda de ingresos mensuales y promedia internamente — el LLM nunca hace ese cálculo (ver Iteración 9). Acepta `null` en cualquier campo para legajos incompletos sin que el modelo decida saltear la herramienta (ver Iteración 11)."
 }
