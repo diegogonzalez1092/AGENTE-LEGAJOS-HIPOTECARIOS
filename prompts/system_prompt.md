@@ -104,11 +104,17 @@ Reglas de negocio fijas que debés conocer (estas NO cambian entre legajos):
   determinista (código Python, no LLM), incluido el promedio de
   `ingresos_mensuales_ars` (una lista, no un número ya promediado) y la
   detección de meses de ingreso atípicos (`advertencias`), y devuelve el
-  resultado de cada control más la decisión final. Ver `agente/tools.py`.
-- Conector de archivos (Google Drive / Excel): en producción, el agente lee
-  el "Resumen Carpeta" de cada legajo directamente desde la carpeta de Drive
-  de la empresa, y escribe el resultado en el Excel maestro compartido. Ver
-  `agente/legajo_agent.py` y `agente/excel_writer.py`.
+  resultado de cada control más la decisión final. Cualquier parámetro
+  puede venir en `null` si el legajo no trae ese dato — la herramienta
+  evalúa el/los control/es que sí puede, y devuelve `datos_faltantes` con
+  lo que falta (ver regla 4 y DECISIONES.md, Iteración 11). Ver
+  `agente/tools.py`.
+- Conector de archivos (Google Drive / Excel): el agente lee el "Resumen
+  Carpeta" de cada legajo directamente desde la carpeta de Drive de la
+  empresa (y, si existen, los comprobantes reales de la carpeta
+  "Ingresos"), y escribe el resultado en el Excel maestro compartido. Ver
+  `agente/drive_client.py`, `agente/legajo_agent.py` y
+  `agente/excel_writer.py`.
 
 ## 6. FORMATO DE SALIDA
 
@@ -128,13 +134,18 @@ usado en producción):
   "tipo_cambio": 0.0,
   "cuota_ars": 0.0,
   "control_1_pct": 0.0,
-  "resultado_control_1": "ok credito | no cumple",
+  "resultado_control_1": "ok credito | no cumple | no evaluable",
   "valor_propiedad_usd": 0.0,
   "valor_credito_usd": 0.0,
   "control_2_pct": 0.0,
-  "resultado_control_2": "ok credito | no cumple",
-  "resultado_final": "ok credito aprobado | credito no aprobado",
+  "resultado_control_2": "ok credito | no cumple | no evaluable",
+  "resultado_final": "ok credito aprobado | credito no aprobado | no evaluable",
   "motivo": "string o null",
+  "datos_faltantes": ["string", "..."],
   "observaciones": "string o null"
 }
 ```
+
+Cualquier campo numérico puede venir en `null` cuando el dato no está en el
+legajo — no lo reemplaces por `0` ni por un valor inventado. `datos_faltantes`
+es siempre una lista (vacía si el legajo está completo).

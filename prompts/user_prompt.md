@@ -34,22 +34,27 @@ comprobantes reales de la carpeta "Ingresos")
    viene con contenido, copialo tal cual a `observaciones` — no lo resumas
    ni lo omitas.
 4. Llamá a la herramienta `evaluar_legajo` con esos números (usando
-   "Crédito Aprobado", no "Total Crédito con fee", para valor_credito_usd) —
-   no calcules los porcentajes ni el promedio vos mismo.
+   "Crédito Aprobado", no "Total Crédito con fee", para valor_credito_usd).
+   Si el legajo no trae alguno de los 4 datos, llamá a la herramienta
+   IGUAL pasando `null` en ese campo — nunca inventes el número y nunca
+   dejes de llamarla.
 5. Completá el JSON de salida con el resultado de la herramienta y tu
-   extracción de datos. Si algún dato no está disponible en el resumen,
-   usá `null` y explicalo en `observaciones`.
+   extracción de datos. Copiá `datos_faltantes` de la herramienta tal cual,
+   y explicá en `observaciones` qué falta.
 ```
 
 ## Variantes
 
-- **Variante "legajo incompleto"**: si el `resumen_carpeta_texto_crudo` no
-  trae valor de mercado de la propiedad o cuota mensual, se agrega al final
-  del prompt: `"Si falta algún dato obligatorio para calcular los controles,
-  no llames a evaluar_legajo con valores inventados: devolvé el JSON con
-  resultado_final = null y explicá en observaciones qué falta."` No se usó
-  en las 3 corridas reales (los 3 legajos venían completos), pero está
-  prevista para producción — ver DECISIONES.md.
+- **Variante "legajo incompleto"**: probada con un caso real de prueba
+  (`corridas/corrida_04_incompleto`, ver DECISIONES.md, Iteración 11) — un
+  legajo sin valor de mercado de la propiedad. El agente llama a
+  `evaluar_legajo` con `valor_propiedad_usd: null`; la herramienta evalúa
+  el Control 1 (que sí tiene datos) y devuelve `control_2_ltv: null`,
+  `resultado_final: "no evaluable"` y
+  `datos_faltantes: ["valor_propiedad_usd"]`. No se agregó ninguna
+  instrucción especial al prompt para este caso — la regla 4 de arriba ya
+  cubre "pasá `null` si falta un dato", y es la misma para los 3 legajos
+  completos y para este caso incompleto.
 - **Variante "comprobante contradice el resumen"**: usada de hecho en la
   corrida de Lopez (ver DECISIONES.md, Iteración 10) — el texto de entrada
   incluye tanto el "Resumen Carpeta" como los comprobantes reales de

@@ -40,6 +40,7 @@ import anthropic
 
 from tools import evaluar_legajo
 from excel_writer import agregar_legajo
+from generar_excel_maestro import fila_excel  # una sola definición, ver ese módulo
 
 MODEL = "claude-haiku-4-5"  # ver ANALISIS_ECONOMICO.md por la justificación de elegir el modelo más chico
 MAX_TOKENS = 2000
@@ -67,20 +68,24 @@ EVALUAR_LEGAJO_TOOL = {
         "también devuelve `advertencias` si algún mes de ingreso es un valor "
         "atípico (más de 3x la mediana del resto) — ese mes no debe tratarse "
         "como ingreso recurrente sin verificación adicional, apruebe o no "
-        "apruebe el resto de los controles."
+        "apruebe el resto de los controles. Si el legajo NO trae alguno de "
+        "estos 4 datos, llamá a la herramienta IGUAL — nunca la saltees ni "
+        "inventes el número — pasando `null` en el campo que falte. La "
+        "herramienta evalúa el control que sí pueda calcular y devuelve "
+        "`resultado_final: \"no evaluable\"` con `datos_faltantes` indicando "
+        "qué faltó (ver DECISIONES.md, Iteración 11)."
     ),
     "strict": True,
     "input_schema": {
         "type": "object",
         "properties": {
-            "cuota_mensual_ars": {"type": "number"},
+            "cuota_mensual_ars": {"type": ["number", "null"]},
             "ingresos_mensuales_ars": {
-                "type": "array",
+                "type": ["array", "null"],
                 "items": {"type": "number"},
-                "minItems": 1,
             },
-            "valor_credito_usd": {"type": "number"},
-            "valor_propiedad_usd": {"type": "number"},
+            "valor_credito_usd": {"type": ["number", "null"]},
+            "valor_propiedad_usd": {"type": ["number", "null"]},
         },
         "required": [
             "cuota_mensual_ars",
@@ -97,26 +102,33 @@ OUTPUT_SCHEMA = {
     "schema": {
         "type": "object",
         "properties": {
-            "nro_credito": {"type": "string"},
-            "jurisdiccion": {"type": "string"},
-            "cliente": {"type": "string"},
-            "ingresos_propios_ars": {"type": "number"},
-            "otros_ingresos_ars": {"type": "number"},
-            "total_ingresos_ars": {"type": "number"},
-            "cuota_usd": {"type": "number"},
-            "tipo_cambio": {"type": "number"},
-            "cuota_ars": {"type": "number"},
-            "control_1_pct": {"type": "number"},
-            "resultado_control_1": {"type": "string", "enum": ["ok credito", "no cumple"]},
-            "valor_propiedad_usd": {"type": "number"},
-            "valor_credito_usd": {"type": "number"},
-            "control_2_pct": {"type": "number"},
-            "resultado_control_2": {"type": "string", "enum": ["ok credito", "no cumple"]},
+            "nro_credito": {"type": ["string", "null"]},
+            "jurisdiccion": {"type": ["string", "null"]},
+            "cliente": {"type": ["string", "null"]},
+            "ingresos_propios_ars": {"type": ["number", "null"]},
+            "otros_ingresos_ars": {"type": ["number", "null"]},
+            "total_ingresos_ars": {"type": ["number", "null"]},
+            "cuota_usd": {"type": ["number", "null"]},
+            "tipo_cambio": {"type": ["number", "null"]},
+            "cuota_ars": {"type": ["number", "null"]},
+            "control_1_pct": {"type": ["number", "null"]},
+            "resultado_control_1": {
+                "type": "string",
+                "enum": ["ok credito", "no cumple", "no evaluable"],
+            },
+            "valor_propiedad_usd": {"type": ["number", "null"]},
+            "valor_credito_usd": {"type": ["number", "null"]},
+            "control_2_pct": {"type": ["number", "null"]},
+            "resultado_control_2": {
+                "type": "string",
+                "enum": ["ok credito", "no cumple", "no evaluable"],
+            },
             "resultado_final": {
                 "type": "string",
-                "enum": ["ok credito aprobado", "credito no aprobado"],
+                "enum": ["ok credito aprobado", "credito no aprobado", "no evaluable"],
             },
             "motivo": {"type": ["string", "null"]},
+            "datos_faltantes": {"type": "array", "items": {"type": "string"}},
             "observaciones": {"type": ["string", "null"]},
         },
         "required": [
@@ -124,7 +136,8 @@ OUTPUT_SCHEMA = {
             "otros_ingresos_ars", "total_ingresos_ars", "cuota_usd", "tipo_cambio",
             "cuota_ars", "control_1_pct", "resultado_control_1",
             "valor_propiedad_usd", "valor_credito_usd", "control_2_pct",
-            "resultado_control_2", "resultado_final", "motivo", "observaciones",
+            "resultado_control_2", "resultado_final", "motivo", "datos_faltantes",
+            "observaciones",
         ],
         "additionalProperties": False,
     },
@@ -164,9 +177,13 @@ def construir_user_prompt(nombre_carpeta: str, ruta_o_id_drive: str, resumen_tex
         "`observaciones` — no lo resumas ni lo omitas.\n"
         "4. Llamá a la herramienta `evaluar_legajo` con esos números "
         "(usando 'Crédito Aprobado', no 'Total Crédito con fee', para "
-        "valor_credito_usd).\n"
+        "valor_credito_usd). Si alguno de los 4 datos no está en el texto, "
+        "pasá `null` en ese campo — no inventes un número y no dejes de "
+        "llamar a la herramienta.\n"
         "5. Completá el JSON de salida con el resultado de la herramienta y tu "
-        "extracción de datos."
+        "extracción de datos. Copiá `datos_faltantes` de la herramienta tal "
+        "cual al campo `datos_faltantes` de tu salida, y explicá en "
+        "`observaciones` qué falta y qué documentación haría falta pedir."
     )
 
 
@@ -237,26 +254,6 @@ def correr_agente(nombre_carpeta: str, ruta_o_id_drive: str, resumen_texto: str)
     return {"salida": json.loads(texto), "uso_tokens": uso, "modelo": MODEL}
 
 
-def fila_excel(salida: dict) -> dict:
-    return {
-        "Nro de crédito": salida["nro_credito"],
-        "Jurisdicción": salida["jurisdiccion"],
-        "Nombre y/o apellido del cliente": salida["cliente"],
-        "Ingresos propios (ARS/mes)": salida["ingresos_propios_ars"],
-        "Otros ingresos (ARS/mes)": salida["otros_ingresos_ars"],
-        "Total ingresos (ARS/mes)": salida["total_ingresos_ars"],
-        "1° cuota - USD": salida["cuota_usd"],
-        "1° cuota - TC": salida["tipo_cambio"],
-        "1° cuota - $ (ARS)": salida["cuota_ars"],
-        "1er control (cuota/ingreso)": f"{salida['control_1_pct']}%",
-        "Resultado 1er control": salida["resultado_control_1"],
-        "Valor propiedad (USD)": salida["valor_propiedad_usd"],
-        "Valor crédito (USD)": salida["valor_credito_usd"],
-        "2do control (LTV)": f"{salida['control_2_pct']}%",
-        "Resultado 2do control": salida["resultado_control_2"],
-        "Resultado final": salida["resultado_final"]
-        + (f" — {salida['motivo']}" if salida.get("motivo") else ""),
-    }
 
 
 if __name__ == "__main__":
@@ -269,13 +266,29 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    try:
+        from drive_client import leer_legajo
+    except ImportError as exc:
+        print(
+            "Faltan las dependencias de Google Drive. Instalá con:\n"
+            "    pip install -r agente/requirements.txt\n"
+            f"Detalle: {exc}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    print(f"Leyendo legajo desde Drive (folder_id={args.drive_folder_id})...", file=sys.stderr)
+    resumen_texto = leer_legajo(args.drive_folder_id)
+
+    nombre_carpeta = args.nombre_carpeta or args.drive_folder_id
+    resultado = correr_agente(nombre_carpeta, args.drive_folder_id, resumen_texto)
+    salida = resultado["salida"]
+
+    print(json.dumps(salida, indent=2, ensure_ascii=False))
     print(
-        "Este script todavía no tiene un cliente de Google Drive cableado "
-        "para leer --drive-folder-id directamente (en esta entrega, la "
-        "lectura de Drive la hizo el conector MCP de Claude Code — ver "
-        "corridas/README.md). Para reproducir las 3 corridas reales con la "
-        "API ya sin depender de Drive, usá:\n"
-        "    python agente/correr_corridas_reales.py",
+        f"\nTokens: {resultado['uso_tokens']} — modelo: {resultado['modelo']}",
         file=sys.stderr,
     )
-    sys.exit(1)
+
+    agregar_legajo(args.excel_out, fila_excel(salida))
+    print(f"Agregado a {args.excel_out}", file=sys.stderr)

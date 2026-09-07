@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import statistics
 from dataclasses import dataclass, asdict
-from typing import Sequence
+from typing import Optional, Sequence
 
 LIMITE_CUOTA_INGRESO = 0.40  # Requisito de negocio: la cuota no puede superar el 40% del ingreso neto
 LIMITE_LTV = 0.35  # Requisito de negocio: el crédito no puede superar el 35% del valor de mercado del inmueble
@@ -118,20 +118,67 @@ def evaluar_control_ltv(valor_credito_usd: float, valor_propiedad_usd: float) ->
 
 
 def evaluar_legajo(
-    cuota_mensual_ars: float,
-    ingresos_mensuales_ars: Sequence[float],
-    valor_credito_usd: float,
-    valor_propiedad_usd: float,
+    cuota_mensual_ars: Optional[float],
+    ingresos_mensuales_ars: Optional[Sequence[float]],
+    valor_credito_usd: Optional[float],
+    valor_propiedad_usd: Optional[float],
 ) -> dict:
     """Aplica los dos controles duros y arma la decisión final + motivo si corresponde.
 
     Esta es la función expuesta como tool al modelo (ver agente/legajo_agent.py).
     El LLM pasa la lista cruda de ingresos mensuales tal como la extrajo del
     legajo — el promedio, igual que los dos controles, lo calcula este código.
+
+    Legajos incompletos (ver DECISIONES.md, Iteración 11): cualquiera de los
+    4 parámetros puede venir en `None` (o la lista de ingresos, vacía). La
+    herramienta se sigue llamando SIEMPRE — el `tool_choice` forzado en
+    `agente/legajo_agent.py` no cambia — pero acá adentro, de forma
+    determinista, se detecta qué falta y se evalúa cada control por
+    separado: si a un control le faltan sus datos, ese control queda en
+    `None` con el motivo en `datos_faltantes`, en vez de forzar al LLM a
+    inventar un número o a decidir por su cuenta si llama a la herramienta
+    o no.
     """
-    ingresos = promediar_ingresos(ingresos_mensuales_ars)
-    control_1 = evaluar_control_cuota_ingreso(cuota_mensual_ars, ingresos["promedio"])
-    control_2 = evaluar_control_ltv(valor_credito_usd, valor_propiedad_usd)
+    datos_faltantes = []
+
+    ingresos = None
+    control_1 = None
+    if cuota_mensual_ars is None:
+        datos_faltantes.append("cuota_mensual_ars")
+    if not ingresos_mensuales_ars:
+        datos_faltantes.append("ingresos_mensuales_ars")
+    if cuota_mensual_ars is not None and ingresos_mensuales_ars:
+        ingresos = promediar_ingresos(ingresos_mensuales_ars)
+        control_1 = evaluar_control_cuota_ingreso(cuota_mensual_ars, ingresos["promedio"])
+
+    control_2 = None
+    if valor_credito_usd is None:
+        datos_faltantes.append("valor_credito_usd")
+    if valor_propiedad_usd is None:
+        datos_faltantes.append("valor_propiedad_usd")
+    if valor_credito_usd is not None and valor_propiedad_usd is not None:
+        control_2 = evaluar_control_ltv(valor_credito_usd, valor_propiedad_usd)
+
+    advertencias = []
+    if ingresos is not None:
+        for outlier in ingresos["outliers"]:
+            advertencias.append(
+                f"Ingreso mensual de ARS {outlier['valor']:,.0f} es {outlier['veces_mediana']}x "
+                f"la mediana del resto de los meses informados — no debe tratarse como ingreso "
+                f"recurrente sin verificar el comprobante que lo respalda (posible pago no "
+                f"recurrente o error de carga)."
+            )
+
+    if control_1 is None or control_2 is None:
+        return {
+            "ingresos": ingresos,
+            "control_1_cuota_ingreso": control_1.to_dict() if control_1 else None,
+            "control_2_ltv": control_2.to_dict() if control_2 else None,
+            "resultado_final": "no evaluable",
+            "motivo": None,
+            "advertencias": advertencias,
+            "datos_faltantes": datos_faltantes,
+        }
 
     motivos = []
     if not control_1.aprueba:
@@ -146,15 +193,6 @@ def evaluar_legajo(
 
     aprobado = control_1.aprueba and control_2.aprueba
 
-    advertencias = []
-    for outlier in ingresos["outliers"]:
-        advertencias.append(
-            f"Ingreso mensual de ARS {outlier['valor']:,.0f} es {outlier['veces_mediana']}x "
-            f"la mediana del resto de los meses informados — no debe tratarse como ingreso "
-            f"recurrente sin verificar el comprobante que lo respalda (posible pago no "
-            f"recurrente o error de carga)."
-        )
-
     return {
         "ingresos": ingresos,
         "control_1_cuota_ingreso": control_1.to_dict(),
@@ -162,6 +200,7 @@ def evaluar_legajo(
         "resultado_final": "ok credito aprobado" if aprobado else "credito no aprobado",
         "motivo": None if aprobado else "; ".join(motivos),
         "advertencias": advertencias,  # se reportan aprobado o no — ver evaluar_control_cuota_ingreso
+        "datos_faltantes": datos_faltantes,  # vacío cuando el legajo está completo
     }
 
 
@@ -199,6 +238,15 @@ if __name__ == "__main__":
             ingresos_mensuales_ars=[282505, 70000, 379192, 1741680, 1654750, 6500000],
             valor_credito_usd=21452,
             valor_propiedad_usd=53000,
+        ),
+        # Legajo incompleto sintético (ver corridas/corrida_04_incompleto y
+        # DECISIONES.md, Iteración 11): no trae valor de mercado de la
+        # propiedad. Control 1 sí se puede evaluar; Control 2, no.
+        "Incompleto (sin valor de propiedad)": dict(
+            cuota_mensual_ars=450000.0,
+            ingresos_mensuales_ars=[2000000, 2100000, 1950000],
+            valor_credito_usd=25000,
+            valor_propiedad_usd=None,
         ),
     }
 

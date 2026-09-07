@@ -21,6 +21,10 @@ EXCEL_OUT = os.path.join(REPO_ROOT, "output", "legajos_maestro.xlsx")
 CORRIDAS = ["corrida_01_perez", "corrida_02_gonzalez", "corrida_03_lopez"]
 
 
+def _pct(valor) -> str:
+    return f"{valor}%" if valor is not None else "N/D"
+
+
 def fila_excel(salida: dict) -> dict:
     return {
         "Nro de crédito": salida["nro_credito"],
@@ -32,14 +36,19 @@ def fila_excel(salida: dict) -> dict:
         "1° cuota - USD": salida["cuota_usd"],
         "1° cuota - TC": salida["tipo_cambio"],
         "1° cuota - $ (ARS)": salida["cuota_ars"],
-        "1er control (cuota/ingreso)": f"{salida['control_1_pct']}%",
+        "1er control (cuota/ingreso)": _pct(salida["control_1_pct"]),
         "Resultado 1er control": salida["resultado_control_1"],
         "Valor propiedad (USD)": salida["valor_propiedad_usd"],
         "Valor crédito (USD)": salida["valor_credito_usd"],
-        "2do control (LTV)": f"{salida['control_2_pct']}%",
+        "2do control (LTV)": _pct(salida["control_2_pct"]),
         "Resultado 2do control": salida["resultado_control_2"],
         "Resultado final": salida["resultado_final"]
-        + (f" — {salida['motivo']}" if salida.get("motivo") else ""),
+        + (f" — {salida['motivo']}" if salida.get("motivo") else "")
+        + (
+            f" (faltan: {', '.join(salida['datos_faltantes'])})"
+            if salida.get("datos_faltantes")
+            else ""
+        ),
     }
 
 
