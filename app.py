@@ -254,7 +254,10 @@ with col_izq:
         format_func=lambda k: f"{PRESETS[k]['dot']} {k} — {PRESETS[k]['resumen']}",
         label_visibility="collapsed",
     )
-    texto_legajo = st.text_area("Texto del legajo", value=PRESETS[caso]["texto"], height=380)
+    with st.expander("Ver / editar texto crudo del legajo"):
+        texto_legajo = st.text_area(
+            "Texto del legajo", value=PRESETS[caso]["texto"], height=380, label_visibility="collapsed"
+        )
 
     restantes = LIMITE_CORRIDAS_POR_SESION - st.session_state.corridas_usadas
     analizar = st.button(
