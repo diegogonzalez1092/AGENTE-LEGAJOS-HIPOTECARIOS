@@ -237,11 +237,7 @@ ni inventar un valor de mercado; debe pasar `null` en `valor_propiedad_usd`.''',
 # UI
 # ---------------------------------------------------------------------
 st.title("🏛️ El Sello del Legajo")
-st.caption(
-    "Agente de análisis financiero de legajos hipotecarios — Trabajo final, "
-    "Programación de y con Agentes de IA, MBA UCEMA. "
-    "[Ver el repo completo](https://github.com/diegogonzalez1092/agente-legajos-hipotecarios)."
-)
+st.caption("Agente de análisis financiero de legajos hipotecarios")
 
 if "corridas_usadas" not in st.session_state:
     st.session_state.corridas_usadas = 0
