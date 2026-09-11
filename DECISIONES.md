@@ -330,3 +330,42 @@ con otra rúbrica**, no de una autoevaluación. Cerrar en serio ese feedback
 la consigna del parcial le pide a `evaluador-grupo-33` hacer con criterio
 humano — acá pasó al revés: un agente evaluador calibró (indirectamente)
 este agente.
+
+## Iteración 12 — Dos interfaces públicas para "que cualquiera pueda usarlo"
+
+El usuario pidió que el agente se pudiera ver y usar en una página, no solo
+leer como código. Se construyeron dos, con arquitecturas de costo
+deliberadamente distintas (ver `GOBIERNO_Y_RIESGO.md` §1 para el detalle):
+
+1. **Demo público (Claude Artifact)** — una página HTML/JS publicada como
+   Artifact, con los 4 casos reales precargados y el mismo motor
+   determinista de `agente/tools.py` reescrito en JavaScript (verificado
+   línea por línea contra los 4 resultados reales del repo antes de
+   publicar: coinciden exacto). Usa la función `sample` de la plataforma de
+   Artifacts, que llama a Claude con el uso de **cada visitante**, no una
+   key propia — nadie puede ver ni robar una credencial porque no hay
+   ninguna en el código de la página. El resultado final que se muestra en
+   pantalla nunca sale de lo que "dice" el modelo: se recalcula siempre con
+   el motor determinista, con los datos que Claude dice haber extraído.
+
+2. **App web (`app.py`, Streamlit)** — pedida explícitamente para tener
+   "una aplicación tipo Streamlit" (como la del parcial de
+   `evaluador-grupo-33`). Reutiliza los módulos reales del repo
+   (`agente/tools.py`, `agente/legajo_agent.py::correr_agente`) en vez de
+   reimplementar nada — es literalmente el mismo agente con una interfaz
+   arriba. A diferencia del Artifact, acá el costo lo paga **una sola**
+   `ANTHROPIC_API_KEY` (la de quien despliega la app), no cada visitante —
+   una diferencia de arquitectura real que quedó documentada, con una
+   salvaguarda básica (5 corridas por sesión de navegador) en vez de
+   ignorarla.
+
+Antes de dar por terminada la app, se corrió un ciclo real de prueba y
+arreglo: se levantó `streamlit run app.py` local, se cargó con Playwright
+(headless), y **se hizo una corrida real completa contra la API** (no un
+mock) — el primer intento reveló un bug visual real: los 4 datos
+financieros (ingreso, cuota, valor propiedad, valor crédito) se mostraban
+truncados ("ARS 2...", "USD ...") porque `st.columns(4)` dejaba muy poco
+ancho por columna. Se cambió a una grilla de 2×2 y se volvió a correr
+contra la API real para confirmar la corrección — captura final: todos los
+valores completos, resultado "Juan Perez — Aprobado" con 27,2%/20,4%,
+coincidiendo con `corridas/corrida_01_perez/salida.json`.

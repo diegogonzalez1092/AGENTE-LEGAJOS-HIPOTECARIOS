@@ -86,10 +86,22 @@ Detalle completo, entrada real y JSON de salida de cada corrida:
 [`corridas/`](corridas/). Excel maestro con las 3 filas ya cargadas:
 [`output/legajos_maestro.xlsx`](output/legajos_maestro.xlsx).
 
+## Probarlo sin instalar nada
+
+- **App web (Streamlit)** — `app.py`, en este mismo repo. Corré `streamlit
+  run app.py` local, o desplegala vos en unos minutos en Streamlit
+  Community Cloud (gratis) — ver "Desplegar la app web" más abajo.
+- **Demo público (Artifact de Claude)** — la misma automatización, sin
+  instalar nada ni configurar ninguna API key propia (cada visitante usa su
+  propio uso de Claude): **[El Sello del
+  Legajo](https://claude.ai/code/artifact/bde042af-382f-42c2-8c56-e5725cedcff1)**.
+
 ## Estructura del repo
 
 ```
 README.md                    — este archivo
+app.py                        — app web (Streamlit): la misma automatización, con interfaz
+requirements.txt               — dependencias de app.py (streamlit + anthropic)
 prompts/
   system_prompt.md           — contrato del agente (rol, objetivo, reglas, herramientas, formato)
   user_prompt.md              — template del mensaje por legajo
@@ -167,6 +179,39 @@ errores, pero no se corrió de punta a punta contra una cuenta de servicio
 real en este entorno (no había credenciales disponibles) — ver
 `DECISIONES.md`, Iteración 11, y `GOBIERNO_Y_RIESGO.md` §2 para el detalle
 de qué falta probar antes de usarlo en producción.
+
+### Correr la app web localmente
+
+```bash
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=sk-ant-...
+streamlit run app.py
+```
+
+Abre en `http://localhost:8501`: elegís uno de los 4 casos de `corridas/`
+(o pegás un legajo propio), apretás **Analizar legajo**, y corre
+`legajo_agent.correr_agente()` de verdad — mismo agente, misma herramienta
+determinista, mismo esquema con `null`. Probado de punta a punta contra la
+API real antes de esta entrega (screenshots en el historial de commits).
+
+### Desplegar la app web (Streamlit Community Cloud, gratis)
+
+1. Andá a **share.streamlit.io** y conectá tu cuenta de GitHub.
+2. **New app** → elegí este repo, branch `main`, archivo principal `app.py`.
+3. Antes de desplegar (o después, en **⋮ → Settings → Secrets**), agregá:
+   ```
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   ```
+4. Deploy. En 1-2 minutos tenés una URL pública tipo
+   `https://tu-app.streamlit.app` que cualquiera puede abrir y usar.
+
+**Importante — a diferencia del demo de Artifact de arriba**, esta app usa
+**una sola** `ANTHROPIC_API_KEY` (la tuya, puesta como secreto) para
+**todos** los visitantes — no es que cada uno gasta su propio uso de
+Claude. `app.py` limita cada sesión de navegador a 5 corridas como
+salvaguarda básica (no es un rate-limit robusto para tráfico alto, alcanza
+para una demo de clase) — ver el docstring de `app.py` y
+`GOBIERNO_Y_RIESGO.md` antes de compartir el link ampliamente.
 
 ## Dónde está cada requisito de la rúbrica
 

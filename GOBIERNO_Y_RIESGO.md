@@ -29,6 +29,15 @@ aprobado), ningún canal de comunicación con el cliente, ni ningún sistema de
 firma o desembolso. Esto es deliberado: es un analista financiero júnior de
 lectura y cálculo, no un sistema con autoridad de decisión ni de contacto.
 
+**Dos formas distintas de exponer esto públicamente, con distinto riesgo**:
+el demo de Artifact (ver README.md) usa el uso de Claude de cada visitante
+— nadie gasta la cuenta de nadie más. `app.py` (Streamlit), en cambio, usa
+**una sola** `ANTHROPIC_API_KEY` puesta como secreto por quien la despliega:
+todo el tráfico público de esa URL consume esa misma cuenta. Por eso
+`app.py` limita cada sesión de navegador a 5 corridas — una salvaguarda
+básica, no un rate-limit robusto — y por eso el README advierte no
+compartir el link de la app ampliamente sin ese contexto.
+
 ## 2. Qué puede salir mal y qué pasa cuando sale mal
 
 | Riesgo | Ejemplo concreto (visto en las 3 corridas reales) | Mitigación |
