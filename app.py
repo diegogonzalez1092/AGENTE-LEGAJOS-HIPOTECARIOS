@@ -1,6 +1,7 @@
 """
-El Sello del Legajo — interfaz web (Streamlit) del agente de análisis
-financiero de legajos hipotecarios.
+Créditos Hipotecarios - Análisis de Solvencia y Parámetros Financieros —
+interfaz web (Streamlit) del agente de análisis financiero de legajos
+hipotecarios.
 
 Es el mismo agente que `agente/legajo_agent.py`: Claude extrae los datos del
 texto crudo del legajo y llama a `evaluar_legajo` (código determinista de
@@ -44,7 +45,11 @@ try:
 except Exception:
     pass  # sin secrets.toml en local — se espera la variable de entorno
 
-st.set_page_config(page_title="El Sello del Legajo", page_icon="🏛️", layout="wide")
+st.set_page_config(
+    page_title="Créditos Hipotecarios - Análisis de Solvencia y Parámetros Financieros",
+    page_icon="🏛️",
+    layout="wide",
+)
 
 # ---------------------------------------------------------------------
 # Los 4 casos reales de corridas/ — mismo texto que recibe el agente real
@@ -236,7 +241,7 @@ ni inventar un valor de mercado; debe pasar `null` en `valor_propiedad_usd`.''',
 # ---------------------------------------------------------------------
 # UI
 # ---------------------------------------------------------------------
-st.title("🏛️ El Sello del Legajo")
+st.title("🏛️ Créditos Hipotecarios - Análisis de Solvencia y Parámetros Financieros")
 st.caption("Agente de análisis financiero de legajos hipotecarios")
 
 if "corridas_usadas" not in st.session_state:
