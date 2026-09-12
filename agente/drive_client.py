@@ -38,7 +38,8 @@ from typing import Optional
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-import openpyxl
+
+from xlsx_utils import xlsx_a_texto as _xlsx_a_texto
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
@@ -98,21 +99,6 @@ def _descargar_bytes(file_id: str) -> bytes:
     while not listo:
         _, listo = downloader.next_chunk()
     return buffer.getvalue()
-
-
-def _xlsx_a_texto(contenido: bytes) -> str:
-    """Convierte un .xlsx real (no Google Sheets) a texto plano por filas,
-    con las celdas separadas por coma — el mismo formato aproximado que
-    devolvía el conector de Drive usado en las 3 corridas reales (ver
-    `corridas/*/entrada.md` para el formato de referencia)."""
-    libro = openpyxl.load_workbook(io.BytesIO(contenido), data_only=True)
-    lineas = []
-    for hoja in libro.worksheets:
-        for fila in hoja.iter_rows(values_only=True):
-            celdas = ["" if v is None else str(v) for v in fila]
-            if any(celdas):
-                lineas.append(",".join(celdas))
-    return "\n".join(lineas)
 
 
 def _pdf_a_texto(contenido: bytes) -> str:

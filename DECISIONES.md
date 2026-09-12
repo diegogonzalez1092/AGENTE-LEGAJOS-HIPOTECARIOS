@@ -369,3 +369,42 @@ ancho por columna. Se cambió a una grilla de 2×2 y se volvió a correr
 contra la API real para confirmar la corrección — captura final: todos los
 valores completos, resultado "Juan Perez — Aprobado" con 27,2%/20,4%,
 coincidiendo con `corridas/corrida_01_perez/salida.json`.
+
+## Iteración 13 — Ajustes de usabilidad de `app.py`: texto crudo colapsado y carga de Excel propio
+
+Dos pedidos del usuario después de probar la app ya desplegada:
+
+1. **El cuadro de texto crudo se veía desprolijo.** El primer ajuste
+   pedido (sacar la mención al trabajo final del subtítulo) no era lo que
+   se veía "desprolijo" — al aclarar, el usuario se refería al cuadro
+   `st.text_area("Texto del legajo", ...)`, que muestra el volcado tal
+   cual del Excel (comas sueltas, columnas vacías). Se lo puso detrás de
+   un `st.expander` colapsado por defecto ("Ver / editar texto crudo del
+   legajo"), así solo se ve si alguien lo abre a propósito.
+
+2. **Subir un Excel propio.** El usuario pidió poder adjuntar un `.xlsx`
+   (no solo elegir entre los 4 casos de ejemplo o pegar texto a mano) y
+   que el agente lo lea y evalúe igual que a los casos reales. Se agregó
+   `st.file_uploader` en `app.py`. Para no duplicar lógica ni forzar que
+   la app web dependa de las librerías de Google (`google-api-python-client`,
+   `google-auth`, que solo hacen falta para el camino de producción por
+   Drive), se extrajo la función de conversión de `.xlsx` a texto — que ya
+   existía adentro de `agente/drive_client.py` — a un módulo nuevo,
+   `agente/xlsx_utils.py`, sin dependencias de Google. `drive_client.py`
+   ahora importa esa misma función en vez de tener su propia copia. El
+   Excel subido se convierte con el mismo formato (filas separadas por
+   coma) que ya se usaba en las 3 corridas reales y en el conector de
+   Drive, se envuelve como `## Resumen Carpeta (<nombre archivo>)` y se le
+   pasa a `legajo_agent.correr_agente()` sin ningún cambio en el agente
+   mismo — mismo contrato, misma herramienta determinista.
+
+   Se probó de punta a punta antes de pushear: se armó un `.xlsx` sintético
+   con `openpyxl`, se corrió `streamlit run app.py` local, y con Playwright
+   se subió el archivo por la UI real y se verificó (captura) que el texto
+   extraído en el expander coincide exactamente con el contenido de las
+   celdas del archivo subido, con el mismo formato de comas que produce
+   `drive_client.py`. No se pudo probar el llamado real a la API de
+   Anthropic en este paso puntual (no había una `ANTHROPIC_API_KEY` en este
+   entorno en el momento del cambio) — lo que sí se validó de punta a punta
+   es la parte nueva (lectura del Excel subido), reusando el mismo agente
+   ya probado contra la API real en las Iteraciones 8-11.

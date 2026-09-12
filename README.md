@@ -90,7 +90,10 @@ Detalle completo, entrada real y JSON de salida de cada corrida:
 
 - **App web (Streamlit)** — `app.py`, en este mismo repo. Corré `streamlit
   run app.py` local, o desplegala vos en unos minutos en Streamlit
-  Community Cloud (gratis) — ver "Desplegar la app web" más abajo.
+  Community Cloud (gratis) — ver "Desplegar la app web" más abajo. Además
+  de los 4 casos de ejemplo, se puede subir un Excel propio (`.xlsx`, por
+  ejemplo el "Resumen Carpeta" real de un legajo) y el agente lo lee y
+  evalúa igual que a los casos de ejemplo.
 - **Demo público (Artifact de Claude)** — la misma automatización, sin
   instalar nada ni configurar ninguna API key propia (cada visitante usa su
   propio uso de Claude): **[El Sello del
@@ -107,6 +110,7 @@ prompts/
   user_prompt.md              — template del mensaje por legajo
 agente/
   tools.py                    — controles financieros deterministas (evaluar_legajo)
+  xlsx_utils.py                  — lectura de .xlsx a texto, compartida por drive_client.py y app.py
   drive_client.py               — cliente real de Google Drive API v3 (producción)
   excel_writer.py              — escritura del Excel maestro (conector real #2)
   legajo_agent.py               — orquestador de producción (SDK de Anthropic + tool use)
@@ -188,11 +192,14 @@ export ANTHROPIC_API_KEY=sk-ant-...
 streamlit run app.py
 ```
 
-Abre en `http://localhost:8501`: elegís uno de los 4 casos de `corridas/`
-(o pegás un legajo propio), apretás **Analizar legajo**, y corre
-`legajo_agent.correr_agente()` de verdad — mismo agente, misma herramienta
-determinista, mismo esquema con `null`. Probado de punta a punta contra la
-API real antes de esta entrega (screenshots en el historial de commits).
+Abre en `http://localhost:8501`: elegís uno de los 4 casos de `corridas/`,
+subís tu propio Excel (`.xlsx`) o pegás el texto directamente, apretás
+**Analizar legajo**, y corre `legajo_agent.correr_agente()` de verdad —
+mismo agente, misma herramienta determinista, mismo esquema con `null`. El
+Excel subido se lee con `agente/xlsx_utils.py` (mismo parser que usa
+`drive_client.py` en producción) y se le da formato de texto antes de
+mandarlo al agente. Probado de punta a punta contra la API real antes de
+esta entrega (screenshots en el historial de commits).
 
 ### Desplegar la app web (Streamlit Community Cloud, gratis)
 

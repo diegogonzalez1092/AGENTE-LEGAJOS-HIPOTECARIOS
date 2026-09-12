@@ -254,9 +254,33 @@ with col_izq:
         format_func=lambda k: f"{PRESETS[k]['dot']} {k} — {PRESETS[k]['resumen']}",
         label_visibility="collapsed",
     )
+
+    archivo_subido = st.file_uploader(
+        "O subí tu propio legajo (Excel .xlsx) — pisa la opción elegida arriba",
+        type=["xlsx"],
+    )
+
+    if archivo_subido is not None:
+        try:
+            from xlsx_utils import xlsx_a_texto  # import diferido: solo hace falta si se sube un archivo
+
+            texto_extraido = xlsx_a_texto(archivo_subido.getvalue())
+            texto_default = f'## Resumen Carpeta ({archivo_subido.name})\n\n```\n{texto_extraido}\n```'
+            nombre_legajo = archivo_subido.name.rsplit(".", 1)[0]
+            fuente = f"archivo subido ({archivo_subido.name})"
+        except Exception as exc:
+            st.error(f"No se pudo leer el Excel subido: {exc}")
+            texto_default = PRESETS[caso]["texto"]
+            nombre_legajo = caso
+            fuente = "app.py (Streamlit)"
+    else:
+        texto_default = PRESETS[caso]["texto"]
+        nombre_legajo = caso
+        fuente = "app.py (Streamlit)"
+
     with st.expander("Ver / editar texto crudo del legajo"):
         texto_legajo = st.text_area(
-            "Texto del legajo", value=PRESETS[caso]["texto"], height=380, label_visibility="collapsed"
+            "Texto del legajo", value=texto_default, height=380, label_visibility="collapsed"
         )
 
     restantes = LIMITE_CORRIDAS_POR_SESION - st.session_state.corridas_usadas
@@ -286,7 +310,7 @@ with col_der:
             try:
                 import legajo_agent  # import diferido: recién acá hace falta la API key
 
-                resultado = legajo_agent.correr_agente(caso, "app.py (Streamlit)", texto_legajo)
+                resultado = legajo_agent.correr_agente(nombre_legajo, fuente, texto_legajo)
                 salida = resultado["salida"]
                 uso = resultado["uso_tokens"]
 
